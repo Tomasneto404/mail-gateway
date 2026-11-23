@@ -9,6 +9,7 @@ import { PageHeader } from '@/components/common/page';
 import { ConfirmDialog } from '@/components/confirm/confirm-dialog';
 import { DataTable, type Column } from '@/components/data-table/data-table';
 import { MessageDrawer } from '@/components/messages/message-drawer';
+import { SandboxInboxButton } from '@/components/messages/sandbox-inbox-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useMe } from '@/lib/auth';
@@ -68,10 +69,13 @@ export function MessagesPage() {
         title="Messages"
         description="Every request after authentication: accepted or rejected"
         actions={
-          <ExportMenu
-            path="/admin/messages/export.csv"
-            params={{ status: filters.status, keyId: filters.keyId, recipient: filters.recipient, subject: filters.subject, from: filters.from, to: filters.to }}
-          />
+          <>
+            <SandboxInboxButton />
+            <ExportMenu
+              path="/admin/messages/export.csv"
+              params={{ status: filters.status, keyId: filters.keyId, recipient: filters.recipient, subject: filters.subject, from: filters.from, to: filters.to }}
+            />
+          </>
         }
       />
       <div className="flex flex-wrap items-center gap-2 border-b px-4 sm:px-8 py-3" data-tour="filters">

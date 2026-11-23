@@ -727,6 +727,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/messages/sandbox-inbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Mailpit (sandbox inbox): whether it is configured and reachable, its URL and message count */
+        get: operations["adminSandboxInbox"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/messages/{id}": {
         parameters: {
             query?: never;
@@ -1897,6 +1914,16 @@ export interface components {
         RotateKeyDto: {
             /** @description Minutes the previous secret keeps working (0-10080). 0 = it stops immediately. */
             graceMinutes?: number;
+        };
+        SandboxInboxDto: {
+            /** @description Mailpit answered its API from the gateway */
+            available: boolean;
+            /** @description MAILPIT_UI_URL is set */
+            configured: boolean;
+            /** @description Messages in Mailpit, when known */
+            messages: number | null;
+            /** @description Mailpit UI as the browser reaches it */
+            url: string | null;
         };
         SendAcceptedDto: {
             /** @description Message id. Use GET /v1/messages/{id} to follow delivery. */
@@ -3313,6 +3340,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BulkResultDto"];
+                };
+            };
+        };
+    };
+    adminSandboxInbox: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxInboxDto"];
                 };
             };
         };

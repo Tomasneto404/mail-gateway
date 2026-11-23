@@ -2902,6 +2902,35 @@
         },
         "type": "object"
       },
+      "SandboxInboxDto": {
+        "properties": {
+          "available": {
+            "description": "Mailpit answered its API from the gateway",
+            "type": "boolean"
+          },
+          "configured": {
+            "description": "MAILPIT_UI_URL is set",
+            "type": "boolean"
+          },
+          "messages": {
+            "description": "Messages in Mailpit, when known",
+            "nullable": true,
+            "type": "number"
+          },
+          "url": {
+            "description": "Mailpit UI as the browser reaches it",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "configured",
+          "url",
+          "available",
+          "messages"
+        ],
+        "type": "object"
+      },
       "SendAcceptedDto": {
         "properties": {
           "id": {
@@ -5978,6 +6007,36 @@
           }
         ],
         "summary": "",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/messages/sandbox-inbox": {
+      "get": {
+        "operationId": "adminSandboxInbox",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxInboxDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "summary": "Mailpit (sandbox inbox): whether it is configured and reachable, its URL and message count",
         "tags": [
           "admin"
         ]

@@ -16,6 +16,7 @@ import {
   AdminUsersController,
 } from './admin/admin.controllers';
 import { QueueInspector } from './queue/queue-inspector.service';
+import { SandboxInboxService } from './admin/sandbox-inbox.service';
 import { StatsService } from './admin/stats.service';
 import { ExportService } from './admin/export.service';
 import { AccountController, AuthController } from './auth/auth.controller';
@@ -61,6 +62,7 @@ export const API_PROVIDERS = [
   GatewayExceptionFilter,
   StatsService,
   QueueInspector,
+  SandboxInboxService,
   ExportService,
   SessionsService,
   UsersService,

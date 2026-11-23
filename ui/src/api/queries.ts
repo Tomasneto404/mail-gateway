@@ -43,6 +43,10 @@ function useAction<TVars, TData>(fn: (v: TVars) => Promise<TData>, opts: { inval
 export const useSystemState = (enabled = true) =>
   useQuery({ queryKey: ['system'], queryFn: () => call(api.GET('/admin/stats/system')), refetchInterval: 10_000, enabled });
 
+/** Mailpit link for the Messages page; only asked for by roles that may read bodies. */
+export const useSandboxInbox = (enabled: boolean) =>
+  useQuery({ queryKey: ['sandbox-inbox'], queryFn: () => call(api.GET('/admin/messages/sandbox-inbox')), refetchInterval: 30_000, enabled, retry: false });
+
 export type QueuesOverview = Schemas['QueuesOverviewDto'];
 export type QueueStatus = Schemas['QueueStatusDto'];
 /** Live while the queues dialog is open. */

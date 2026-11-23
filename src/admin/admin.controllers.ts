@@ -35,6 +35,7 @@ import { SendService } from '../send/send.service';
 import { AdminAuditService } from './admin-audit.service';
 import { AdminAuthGuard, AdminRequest, RequirePermission, can } from './admin-auth.guard';
 import { AdminMessagesService } from './admin-messages.service';
+import { SandboxInboxService } from './sandbox-inbox.service';
 import { ExportService } from './export.service';
 import { auditWhere, parseAuditQuery, parseMessageQuery, qUuid } from './filters';
 import type { CsvDelimiter } from '../common/csv';
@@ -59,6 +60,7 @@ import {
   RoleDto,
   RoleListDto,
   QueuesOverviewDto,
+  SandboxInboxDto,
   SettingsDto,
   StatsOverviewDto,
   SystemStateDto,
@@ -297,7 +299,17 @@ export class AdminMessagesController {
   constructor(
     private readonly messages: AdminMessagesService,
     private readonly exports: ExportService,
+    private readonly sandbox: SandboxInboxService,
   ) {}
+
+  // Mailpit shows full bodies without the gateway's access control, so only body readers get the link.
+  @Get('sandbox-inbox')
+  @RequirePermission('messages:bodies')
+  @ApiOperation({ operationId: 'adminSandboxInbox', summary: 'Mailpit (sandbox inbox): whether it is configured and reachable, its URL and message count' })
+  @ApiOkResponse({ type: SandboxInboxDto })
+  sandboxInbox() {
+    return this.sandbox.get();
+  }
 
   @Get()
   @RequirePermission('messages:read')

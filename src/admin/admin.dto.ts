@@ -287,6 +287,13 @@ export class SystemStateDto {
   @ApiProperty({ type: CheckDto }) smtpHealth!: CheckDto;
 }
 
+export class SandboxInboxDto {
+  @ApiProperty({ description: 'MAILPIT_UI_URL is set' }) configured!: boolean;
+  @ApiProperty({ type: String, nullable: true, description: 'Mailpit UI as the browser reaches it' }) url!: string | null;
+  @ApiProperty({ description: 'Mailpit answered its API from the gateway' }) available!: boolean;
+  @ApiProperty({ type: Number, nullable: true, description: 'Messages in Mailpit, when known' }) messages!: number | null;
+}
+
 // ---------------------------------------------------------------- queues (BullMQ)
 export class QueueCountsDto {
   @ApiProperty({ description: 'Ready to run (includes jobs held while the queue is paused)' }) waiting!: number;

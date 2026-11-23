@@ -126,6 +126,9 @@ export const configSchema = z.object({
   MAILPIT_SMTP_HOST: z.string().default('mailpit'),
   MAILPIT_SMTP_PORT: int(1025, 1),
   MAILPIT_UI_URL: optStr,
+  // Mailpit's HTTP API as the API container reaches it (health and count for the "Sandbox Messages"
+  // button). Default: http://<MAILPIT_SMTP_HOST>:8025
+  MAILPIT_API_URL: optStr,
 
   /** Maximum rows per CSV export (protects the database; narrow the filters for more). */
   EXPORT_MAX_ROWS: int(100_000, 1),
