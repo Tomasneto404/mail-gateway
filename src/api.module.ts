@@ -11,9 +11,11 @@ import {
   AdminRolesController,
   AdminMessagesController,
   AdminSettingsController,
+  AdminQueuesController,
   AdminStatsController,
   AdminUsersController,
 } from './admin/admin.controllers';
+import { QueueInspector } from './queue/queue-inspector.service';
 import { StatsService } from './admin/stats.service';
 import { ExportService } from './admin/export.service';
 import { AccountController, AuthController } from './auth/auth.controller';
@@ -58,6 +60,7 @@ export const API_PROVIDERS = [
   AdminMessagesService,
   GatewayExceptionFilter,
   StatsService,
+  QueueInspector,
   ExportService,
   SessionsService,
   UsersService,
@@ -106,6 +109,7 @@ export class ApiModule {
         AdminMessagesController,
         AdminGatewayController,
         AdminStatsController,
+        AdminQueuesController,
         AdminUsersController,
         AdminRolesController,
         AdminAuditController,

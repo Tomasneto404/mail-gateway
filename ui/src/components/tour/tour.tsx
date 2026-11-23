@@ -62,9 +62,12 @@ export function TourProvider({ children }: { children: ReactNode }) {
   const { user, canAny } = useMe();
   const navigate = useNavigate();
   const [seen, setSeen] = useState(true);
+  // `index` is the step asked for; `shown` is the step on screen. The card keeps showing the previous
+  // step (and the spotlight stays where it was) until the next target exists, then both glide over.
+  // Nothing unmounts between steps, so the page never flashes undimmed.
   const [index, setIndex] = useState<number | null>(null);
+  const [shown, setShown] = useState<{ index: number; target: HTMLElement | null } | null>(null);
   const [dir, setDir] = useState<1 | -1>(1);
-  const [target, setTarget] = useState<HTMLElement | null>(null);
 
   useEffect(() => setSeen(readSeen(user?.id)), [user?.id]);
 
@@ -73,7 +76,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
 
   const close = useCallback(() => {
     setIndex(null);
-    setTarget(null);
+    setShown(null);
     setSeen(true);
     writeSeen(user?.id);
   }, [user?.id]);
@@ -97,10 +100,13 @@ export function TourProvider({ children }: { children: ReactNode }) {
 
   // Resolve the current step: open its route, wait for its target, skip it when it never appears.
   useEffect(() => {
-    if (!step) return;
-    setTarget(null);
-    if (!step.target) return;
+    if (!step || index === null) return;
+    const at = index;
     if (step.route && !onRoute(step.route)) navigate({ to: step.route });
+    if (!step.target) {
+      setShown({ index: at, target: null });
+      return;
+    }
     let cancelled = false;
     const startedAt = performance.now();
     const look = () => {
@@ -108,7 +114,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
       const el = (!step.route || onRoute(step.route)) && findTarget(step.target!);
       if (el) {
         el.scrollIntoView({ block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' });
-        setTarget(el);
+        setShown({ index: at, target: el });
       } else if (performance.now() - startedAt > 3000) go(dir);
       else requestAnimationFrame(look);
     };
@@ -135,45 +141,102 @@ export function TourProvider({ children }: { children: ReactNode }) {
   return (
     <TourContext.Provider value={ctx}>
       {children}
-      {step && (!step.target || target) && (
-        <TourOverlay step={step} target={target} index={index!} total={steps.length} onNext={() => go(1)} onBack={() => go(-1)} onClose={close} />
+      {index !== null && (
+        <TourOverlay
+          step={shown ? steps[shown.index] : undefined}
+          target={shown?.target ?? null}
+          index={shown?.index ?? index}
+          total={steps.length}
+          onNext={() => go(1)}
+          onBack={() => go(-1)}
+          onClose={close}
+        />
       )}
     </TourContext.Provider>
   );
 }
 
-function useTargetBox(target: HTMLElement | null) {
-  const [box, setBox] = useState<Box | null>(null);
-  useEffect(() => {
-    if (!target) return setBox(null);
-    let raf = 0;
-    let last = '';
-    const tick = () => {
-      const r = target.getBoundingClientRect();
-      const key = `${r.top}|${r.left}|${r.width}|${r.height}|${window.innerWidth}|${window.innerHeight}`;
-      if (key !== last) {
-        last = key;
-        setBox(spotlightBox({ top: r.top, left: r.left, width: r.width, height: r.height }, window.innerWidth, window.innerHeight));
-      }
-      raf = requestAnimationFrame(tick);
-    };
-    tick();
-    return () => cancelAnimationFrame(raf);
-  }, [target]);
-  return box;
+/**
+ * Critically damped spring: starts from rest, accelerates smoothly and settles on the goal without
+ * overshoot (~350 ms for a step-to-step move). Retargeting mid-flight keeps the current velocity,
+ * so following a scrolling target or a quick double "Next" never jerks.
+ */
+export const SPRING_OMEGA = 16;
+export type Spring = { x: number; v: number };
+export function springStep(s: Spring, goal: number, dt: number, omega = SPRING_OMEGA): Spring {
+  const h = Math.min(dt, 1 / 30);
+  const v = s.v + (omega * omega * (goal - s.x) - 2 * omega * s.v) * h;
+  const x = s.x + v * h;
+  return Math.abs(goal - x) < 0.5 && Math.abs(v) < 8 ? { x: goal, v: 0 } : { x, v };
 }
 
-function TourOverlay({ step, target, index, total, onNext, onBack, onClose }: { step: TourStep; target: HTMLElement | null; index: number; total: number; onNext: () => void; onBack: () => void; onClose: () => void }) {
-  const spot = useTargetBox(target);
+/**
+ * Spotlight and card follow their goal with an eased rAF loop that writes styles directly:
+ * one smooth glide between steps, and the spotlight tracks a scrolling target without lagging
+ * behind a CSS transition or re-rendering React every frame.
+ */
+function useGlide(
+  refs: { hole: React.RefObject<HTMLDivElement | null>; ring: React.RefObject<HTMLDivElement | null>; card: React.RefObject<HTMLDivElement | null> },
+  goal: { target: HTMLElement | null; spotlight: boolean; placement?: TourStep['placement'] },
+) {
+  const latest = useRef(goal);
+  latest.current = goal;
+  useLayoutEffect(() => {
+    const reduce = reducedMotion();
+    let raf = 0;
+    let prev = performance.now();
+    // top, left, width, height of the spotlight; top, left of the card
+    let springs: Spring[] | null = null;
+    let lastGoal: Box | null = null;
+    const frame = (now: number) => {
+      const dt = Math.max(0, now - prev) / 1000;
+      prev = now;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const centre: Box = { top: vh / 2, left: vw / 2, width: 0, height: 0 };
+      const { target, spotlight, placement } = latest.current;
+      let want = centre;
+      if (spotlight) {
+        // A target left behind by a route change has no box any more: hold the last one.
+        const r = target?.isConnected ? target.getBoundingClientRect() : null;
+        want = r && r.width > 0 && r.height > 0 ? spotlightBox({ top: r.top, left: r.left, width: r.width, height: r.height }, vw, vh) : (lastGoal ?? centre);
+      }
+      lastGoal = want;
+      const card = refs.card.current;
+      const size = card ? { width: card.offsetWidth, height: card.offsetHeight } : { width: 340, height: 200 };
+      const wantCard = spotlight && want.width > 0 ? cardPosition(want, size, vw, vh, placement) : { top: (vh - size.height) / 2, left: (vw - size.width) / 2 };
+
+      const goals = [want.top, want.left, want.width, want.height, wantCard.top, wantCard.left];
+      springs = reduce || !springs ? goals.map((x) => ({ x, v: 0 })) : springs.map((s, i) => springStep(s, goals[i], dt));
+      const [top, left, width, height, cardTop, cardLeft] = springs.map((s) => s.x);
+      const box = { top, left, width: Math.max(0, width), height: Math.max(0, height) };
+      const at = { top: cardTop, left: cardLeft };
+
+      for (const el of [refs.hole.current, refs.ring.current]) {
+        if (!el) continue;
+        el.style.transform = `translate3d(${box.left}px, ${box.top}px, 0)`;
+        el.style.width = `${box.width}px`;
+        el.style.height = `${box.height}px`;
+      }
+      if (refs.ring.current) refs.ring.current.style.opacity = spotlight && want.width > 0 ? '1' : '0';
+      if (card) card.style.transform = `translate3d(${Math.round(at.left)}px, ${Math.round(at.top)}px, 0)`;
+      raf = requestAnimationFrame(frame);
+    };
+    frame(prev);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one loop per overlay; goals are read from a ref
+  }, []);
+}
+
+function TourOverlay({ step, target, index, total, onNext, onBack, onClose }: { step: TourStep | undefined; target: HTMLElement | null; index: number; total: number; onNext: () => void; onBack: () => void; onClose: () => void }) {
+  const hole = useRef<HTMLDivElement>(null);
+  const ring = useRef<HTMLDivElement>(null);
   const card = useRef<HTMLDivElement>(null);
   const next = useRef<HTMLButtonElement>(null);
-  const [size, setSize] = useState({ width: 340, height: 200 });
   const last = index === total - 1;
+  useGlide({ hole, ring, card }, { target, spotlight: !!step?.target, placement: step?.placement });
 
-  useLayoutEffect(() => {
-    if (card.current) setSize({ width: card.current.offsetWidth, height: card.current.offsetHeight });
-  }, [step.id]);
-  useEffect(() => next.current?.focus({ preventScroll: true }), [step.id]);
+  useEffect(() => next.current?.focus({ preventScroll: true }), [step?.id]);
 
   // Keys stay inside the tour: arrows move, Escape leaves, Tab cycles the card's buttons,
   // and the app's own shortcuts (g k, ⌘K) are held back until the tour ends.
@@ -198,78 +261,77 @@ function TourOverlay({ step, target, index, total, onNext, onBack, onClose }: { 
     return () => window.removeEventListener('keydown', onKey, true);
   }, [index, onNext, onBack, onClose]);
 
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const pos = spot ? cardPosition(spot, size, vw, vh, step.placement) : { top: (vh - size.height) / 2, left: (vw - size.width) / 2 };
-
   return (
-    <div className="fixed inset-0 z-[60]" data-testid="tour">
-      {/* blocks the page; the spotlight's shadow does the dimming */}
-      <div className={cn('absolute inset-0', !spot && 'bg-black/55')} aria-hidden onClick={(e) => e.stopPropagation()} />
-      {spot && (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute top-0 left-0 rounded-lg motion-safe:transition-transform motion-safe:duration-300"
-          style={{
-            width: spot.width,
-            height: spot.height,
-            transform: `translate(${spot.left}px, ${spot.top}px)`,
-            boxShadow: '0 0 0 1.5px var(--brand), 0 0 0 9999px rgb(9 9 11 / 0.55)',
-          }}
-        />
-      )}
+    <div className="motion-safe:animate-in motion-safe:fade-in-0 fixed inset-0 z-[60] motion-safe:duration-200" data-testid="tour">
+      {/* blocks the page; the hole's shadow does the dimming (a zero-size hole dims everything) */}
+      <div className="absolute inset-0" aria-hidden onClick={(e) => e.stopPropagation()} />
       <div
-        ref={card}
-        key={step.id}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="tour-title"
-        aria-describedby="tour-body"
-        className="bg-popover text-popover-foreground motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-1 absolute w-85 max-w-[calc(100vw-32px)] rounded-xl border p-5 shadow-[0_8px_24px_rgb(0_0_0/0.12)] motion-safe:duration-200"
-        style={{ top: pos.top, left: pos.left }}
-      >
-        <div className="flex items-center justify-between gap-4">
-          <ol className="flex items-center gap-1.5" aria-label={`Step ${index + 1} of ${total}`}>
-            {Array.from({ length: total }, (_, i) => (
-              <li
-                key={i}
-                className={cn(
-                  'size-1.5 rounded-full',
-                  i < index && 'bg-brand',
-                  i === index && 'ring-brand ring-[1.5px] ring-offset-0',
-                  i > index && 'bg-muted-foreground/30',
-                )}
-              />
-            ))}
-          </ol>
-          <span className="text-muted-foreground tabular font-mono text-xs">
-            {index + 1} of {total}
-          </span>
-        </div>
-        <h2 id="tour-title" className="mt-4 text-base leading-6 font-medium">
-          {step.title}
-        </h2>
-        <p id="tour-body" className="text-secondary-foreground mt-1.5 text-sm leading-5">
-          {step.body}
-        </p>
-        <div className="mt-5 flex items-center gap-2">
-          {!last && (
-            <Button variant="ghost" size="sm" className="text-secondary-foreground -ml-2" onClick={onClose}>
-              Skip tour
-            </Button>
-          )}
-          <div className="ml-auto flex gap-2">
-            {index > 0 && (
-              <Button variant="outline" size="sm" onClick={onBack}>
-                Back
+        ref={hole}
+        aria-hidden
+        className="pointer-events-none absolute top-0 left-0 rounded-lg will-change-transform"
+        style={{ boxShadow: '0 0 0 9999px rgb(9 9 11 / 0.55)' }}
+      />
+      <div
+        ref={ring}
+        aria-hidden
+        className="pointer-events-none absolute top-0 left-0 rounded-lg opacity-0 transition-opacity duration-200 will-change-transform"
+        style={{ boxShadow: '0 0 0 1.5px var(--brand)' }}
+      />
+      {step && (
+        <div
+          ref={card}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tour-title"
+          aria-describedby="tour-body"
+          className="bg-popover text-popover-foreground absolute top-0 left-0 w-85 max-w-[calc(100vw-32px)] rounded-xl border p-5 shadow-[0_8px_24px_rgb(0_0_0/0.12)] will-change-transform"
+        >
+          <div className="flex items-center justify-between gap-4">
+            <ol className="flex items-center gap-1.5" aria-label={`Step ${index + 1} of ${total}`}>
+              {Array.from({ length: total }, (_, i) => (
+                <li
+                  key={i}
+                  className={cn(
+                    'size-1.5 rounded-full transition-colors duration-200',
+                    i < index && 'bg-brand',
+                    i === index && 'ring-brand ring-[1.5px] ring-offset-0',
+                    i > index && 'bg-muted-foreground/30',
+                  )}
+                />
+              ))}
+            </ol>
+            <span className="text-muted-foreground tabular font-mono text-xs">
+              {index + 1} of {total}
+            </span>
+          </div>
+          {/* only the words cross-fade; the card itself glides */}
+          <div key={step.id} className="motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-200">
+            <h2 id="tour-title" className="mt-4 text-base leading-6 font-medium">
+              {step.title}
+            </h2>
+            <p id="tour-body" className="text-secondary-foreground mt-1.5 text-sm leading-5">
+              {step.body}
+            </p>
+          </div>
+          <div className="mt-5 flex items-center gap-2">
+            {!last && (
+              <Button variant="ghost" size="sm" className="text-secondary-foreground -ml-2" onClick={onClose}>
+                Skip tour
               </Button>
             )}
-            <Button ref={next} size="sm" onClick={onNext}>
-              {index === 0 ? 'Start' : last ? 'Finish' : 'Next'}
-            </Button>
+            <div className="ml-auto flex gap-2">
+              {index > 0 && (
+                <Button variant="outline" size="sm" onClick={onBack}>
+                  Back
+                </Button>
+              )}
+              <Button ref={next} size="sm" onClick={onNext}>
+                {index === 0 ? 'Start' : last ? 'Finish' : 'Next'}
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

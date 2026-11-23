@@ -793,6 +793,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/queues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** BullMQ queues: job counts, workers, oldest waiting job, throughput, wait/run times, recent failures */
+        get: operations["adminQueues"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/roles": {
         parameters: {
             query?: never;
@@ -1764,6 +1781,19 @@ export interface components {
             subject: string;
             variables: string[];
         };
+        QueueCountsDto: {
+            active: number;
+            /** @description Completed and still kept (each queue trims these) */
+            completed: number;
+            /** @description Scheduled for later: retries in backoff, parked jobs, repeatable jobs */
+            delayed: number;
+            /** @description Failed after all attempts and still kept */
+            failed: number;
+            prioritized: number;
+            /** @description Ready to run (includes jobs held while the queue is paused) */
+            waiting: number;
+            waitingChildren: number;
+        };
         QueueDepthDto: {
             active: number;
             delayed: number;
@@ -1771,6 +1801,61 @@ export interface components {
             paused: number;
             prioritized: number;
             waiting: number;
+        };
+        QueueFailureDto: {
+            at: string | null;
+            attempts: number;
+            /** @description Job id (for delivery jobs, the message id) */
+            id: string;
+            name: string;
+            reason: string | null;
+        };
+        QueuePerMinuteDto: {
+            /** @description Last 60 minutes, oldest first */
+            completed: number[];
+            /** @description Last 60 minutes, oldest first */
+            failed: number[];
+        };
+        QueueStatusDto: {
+            counts: components["schemas"]["QueueCountsDto"];
+            description: string;
+            /** @enum {string} */
+            health: "ok" | "warn" | "down";
+            healthReason: string;
+            lastDay: components["schemas"]["QueueWindowDto"];
+            lastHour: components["schemas"]["QueueWindowDto"];
+            name: string;
+            oldestWaitingSeconds: number | null;
+            paused: boolean;
+            perMinute: components["schemas"]["QueuePerMinuteDto"];
+            /** @description null when the caller may not see this queue's failure reasons */
+            recentFailures: components["schemas"]["QueueFailureDto"][] | null;
+            timings: components["schemas"]["QueueTimingsDto"];
+            /** @description Connected worker processes; -1 when Redis does not allow CLIENT LIST */
+            workers: number;
+        };
+        QueueTimingsDto: {
+            /** @description Of those, jobs that needed more than one attempt */
+            retried: number;
+            runMaxMs: number | null;
+            /** @description Processing time of the last attempt */
+            runP50Ms: number | null;
+            runP95Ms: number | null;
+            /** @description Recently completed jobs the figures are taken from */
+            sampled: number;
+            /** @description Time from due to started, first-attempt jobs */
+            waitP50Ms: number | null;
+            waitP95Ms: number | null;
+        };
+        QueueWindowDto: {
+            completed: number;
+            failed: number;
+        };
+        QueuesOverviewDto: {
+            at: string;
+            /** @description A job waiting longer than this marks the queue as backlogged */
+            backlogSeconds: number;
+            queues: components["schemas"]["QueueStatusDto"][];
         };
         ReasonCountDto: {
             count: number;
@@ -3316,6 +3401,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MessageActionDto"];
+                };
+            };
+        };
+    };
+    adminQueues: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueuesOverviewDto"];
                 };
             };
         };

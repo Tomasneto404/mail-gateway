@@ -44,6 +44,27 @@ export class MetricsService {
     labelNames: ['provider'] as const,
     registers: [this.registry],
   });
+  // BullMQ jobs, recorded by the worker process (see instrumentWorker).
+  readonly queueJobs = new Counter({
+    name: 'mg_queue_jobs_processed_total',
+    help: 'Jobs processed per queue: completed, failed (no attempts left) or retried (will run again)',
+    labelNames: ['queue', 'outcome'] as const,
+    registers: [this.registry],
+  });
+  readonly queueWait = new Histogram({
+    name: 'mg_queue_job_wait_seconds',
+    help: 'Time a first-attempt job waited between becoming due and starting',
+    labelNames: ['queue'] as const,
+    buckets: [0.01, 0.05, 0.1, 0.5, 1, 5, 15, 60, 300, 900, 3600],
+    registers: [this.registry],
+  });
+  readonly queueRun = new Histogram({
+    name: 'mg_queue_job_duration_seconds',
+    help: 'Processing time of a job attempt',
+    labelNames: ['queue', 'outcome'] as const,
+    buckets: [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 30, 60, 300],
+    registers: [this.registry],
+  });
 
   constructor() {
     collectDefaultMetrics({ register: this.registry, prefix: 'mg_process_' });

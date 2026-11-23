@@ -2479,6 +2479,45 @@
         ],
         "type": "object"
       },
+      "QueueCountsDto": {
+        "properties": {
+          "active": {
+            "type": "number"
+          },
+          "completed": {
+            "description": "Completed and still kept (each queue trims these)",
+            "type": "number"
+          },
+          "delayed": {
+            "description": "Scheduled for later: retries in backoff, parked jobs, repeatable jobs",
+            "type": "number"
+          },
+          "failed": {
+            "description": "Failed after all attempts and still kept",
+            "type": "number"
+          },
+          "prioritized": {
+            "type": "number"
+          },
+          "waiting": {
+            "description": "Ready to run (includes jobs held while the queue is paused)",
+            "type": "number"
+          },
+          "waitingChildren": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "waiting",
+          "active",
+          "delayed",
+          "prioritized",
+          "waitingChildren",
+          "failed",
+          "completed"
+        ],
+        "type": "object"
+      },
       "QueueDepthDto": {
         "properties": {
           "active": {
@@ -2507,6 +2546,212 @@
           "failed",
           "paused",
           "prioritized"
+        ],
+        "type": "object"
+      },
+      "QueueFailureDto": {
+        "properties": {
+          "at": {
+            "nullable": true,
+            "type": "string"
+          },
+          "attempts": {
+            "type": "number"
+          },
+          "id": {
+            "description": "Job id (for delivery jobs, the message id)",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "reason": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "reason",
+          "attempts",
+          "at"
+        ],
+        "type": "object"
+      },
+      "QueuePerMinuteDto": {
+        "properties": {
+          "completed": {
+            "description": "Last 60 minutes, oldest first",
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "failed": {
+            "description": "Last 60 minutes, oldest first",
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "completed",
+          "failed"
+        ],
+        "type": "object"
+      },
+      "QueueStatusDto": {
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/QueueCountsDto"
+          },
+          "description": {
+            "type": "string"
+          },
+          "health": {
+            "enum": [
+              "ok",
+              "warn",
+              "down"
+            ],
+            "type": "string"
+          },
+          "healthReason": {
+            "type": "string"
+          },
+          "lastDay": {
+            "$ref": "#/components/schemas/QueueWindowDto"
+          },
+          "lastHour": {
+            "$ref": "#/components/schemas/QueueWindowDto"
+          },
+          "name": {
+            "type": "string"
+          },
+          "oldestWaitingSeconds": {
+            "nullable": true,
+            "type": "number"
+          },
+          "paused": {
+            "type": "boolean"
+          },
+          "perMinute": {
+            "$ref": "#/components/schemas/QueuePerMinuteDto"
+          },
+          "recentFailures": {
+            "description": "null when the caller may not see this queue's failure reasons",
+            "items": {
+              "$ref": "#/components/schemas/QueueFailureDto"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "timings": {
+            "$ref": "#/components/schemas/QueueTimingsDto"
+          },
+          "workers": {
+            "description": "Connected worker processes; -1 when Redis does not allow CLIENT LIST",
+            "type": "number"
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "health",
+          "healthReason",
+          "paused",
+          "workers",
+          "counts",
+          "oldestWaitingSeconds",
+          "lastHour",
+          "lastDay",
+          "perMinute",
+          "timings",
+          "recentFailures"
+        ],
+        "type": "object"
+      },
+      "QueueTimingsDto": {
+        "properties": {
+          "retried": {
+            "description": "Of those, jobs that needed more than one attempt",
+            "type": "number"
+          },
+          "runMaxMs": {
+            "nullable": true,
+            "type": "number"
+          },
+          "runP50Ms": {
+            "description": "Processing time of the last attempt",
+            "nullable": true,
+            "type": "number"
+          },
+          "runP95Ms": {
+            "nullable": true,
+            "type": "number"
+          },
+          "sampled": {
+            "description": "Recently completed jobs the figures are taken from",
+            "type": "number"
+          },
+          "waitP50Ms": {
+            "description": "Time from due to started, first-attempt jobs",
+            "nullable": true,
+            "type": "number"
+          },
+          "waitP95Ms": {
+            "nullable": true,
+            "type": "number"
+          }
+        },
+        "required": [
+          "sampled",
+          "retried",
+          "waitP50Ms",
+          "waitP95Ms",
+          "runP50Ms",
+          "runP95Ms",
+          "runMaxMs"
+        ],
+        "type": "object"
+      },
+      "QueueWindowDto": {
+        "properties": {
+          "completed": {
+            "type": "number"
+          },
+          "failed": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "completed",
+          "failed"
+        ],
+        "type": "object"
+      },
+      "QueuesOverviewDto": {
+        "properties": {
+          "at": {
+            "type": "string"
+          },
+          "backlogSeconds": {
+            "description": "A job waiting longer than this marks the queue as backlogged",
+            "type": "number"
+          },
+          "queues": {
+            "items": {
+              "$ref": "#/components/schemas/QueueStatusDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "at",
+          "backlogSeconds",
+          "queues"
         ],
         "type": "object"
       },
@@ -5904,6 +6149,36 @@
           }
         ],
         "summary": "",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/queues": {
+      "get": {
+        "operationId": "adminQueues",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueuesOverviewDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "summary": "BullMQ queues: job counts, workers, oldest waiting job, throughput, wait/run times, recent failures",
         "tags": [
           "admin"
         ]

@@ -38,5 +38,17 @@ test('every screen renders without CSP violations', async ({ page }) => {
       }
     }
   }
+  // Check Queues: every BullMQ queue, live from Redis
+  await page.goto('/ui/');
+  await page.getByRole('button', { name: 'Check Queues' }).click();
+  const dialog = page.getByTestId('queues-dialog');
+  for (const q of ['delivery', 'system-mail', 'alerts', 'maintenance']) await expect(dialog.getByTestId(`queue-${q}`)).toBeVisible();
+  // the first queue opens on its own and shows the per-minute chart
+  await expect(dialog.getByTestId('queue-delivery').locator('[aria-expanded="true"]')).toBeVisible();
+  await expect(dialog.getByTestId('queue-delivery').getByText('Finished per minute')).toBeVisible();
+  if (OUT) await page.screenshot({ path: `${OUT}/queues.png` });
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+
   expect(problems.filter((p) => !p.includes('401'))).toEqual([]);
 });

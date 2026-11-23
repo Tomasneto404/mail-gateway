@@ -102,7 +102,7 @@ function InviteDialog() {
           }
         }}
       >
-        <DialogContent className="max-h-[90dvh] overflow-y-auto">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Invite admin user</DialogTitle>
             <DialogDescription>Local account with a password and optional two-factor authentication. SSO users get their roles from Authentik groups automatically.</DialogDescription>
@@ -144,7 +144,7 @@ function EditRolesDialog({ user, onClose }: { user: User; onClose: () => void })
   const update = useUpdateUser();
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Roles of {user.email}</DialogTitle>
           <DialogDescription>Takes effect immediately. Recorded in the activity log.</DialogDescription>

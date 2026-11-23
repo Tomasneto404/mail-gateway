@@ -43,6 +43,12 @@ function useAction<TVars, TData>(fn: (v: TVars) => Promise<TData>, opts: { inval
 export const useSystemState = (enabled = true) =>
   useQuery({ queryKey: ['system'], queryFn: () => call(api.GET('/admin/stats/system')), refetchInterval: 10_000, enabled });
 
+export type QueuesOverview = Schemas['QueuesOverviewDto'];
+export type QueueStatus = Schemas['QueueStatusDto'];
+/** Live while the queues dialog is open. */
+export const useQueues = (enabled: boolean) =>
+  useQuery({ queryKey: ['queues'], queryFn: () => call(api.GET('/admin/queues')), refetchInterval: 5_000, enabled });
+
 export const useStats = (q: { from?: string; to?: string; bucket?: 'hour' | 'day'; keyId?: string }) =>
   useQuery({
     queryKey: ['stats', q],

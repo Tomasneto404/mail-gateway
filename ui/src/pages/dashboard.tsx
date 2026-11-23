@@ -1,11 +1,12 @@
 // Authored by Tomás Neto (TN 2026)
 import { Link } from '@tanstack/react-router';
-import { PauseCircle, PlayCircle } from 'lucide-react';
+import { Layers, PauseCircle, PlayCircle } from 'lucide-react';
 import { useState } from 'react';
 import { usePauseGateway, useResumeGateway, useStats, useSystemState } from '@/api/queries';
 import { Dot, Signal } from '@/components/common/badges';
 import { PageHeader } from '@/components/common/page';
 import { BarList, Legend, StatTile, VolumeChart, changeVs } from '@/components/dashboard/charts';
+import { QueuesDialog } from '@/components/dashboard/queues-dialog';
 import { Segmented } from '@/components/keys/segmented';
 import { PauseDialog } from '@/components/layout/app-shell';
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,7 @@ export function DashboardPage() {
   const pause = usePauseGateway();
   const resume = useResumeGateway();
   const [confirm, setConfirm] = useState(false);
+  const [queuesOpen, setQueuesOpen] = useState(false);
   const g = sys.data?.gateway;
   const t = stats.data?.totals;
   const p = stats.data?.previousTotals;
@@ -44,13 +46,18 @@ export function DashboardPage() {
         title="Dashboard"
         description={RANGE_LABEL[range]}
         actions={
-          <Segmented
-            label="Time range"
-            size="sm"
-            value={range}
-            onChange={setRange}
-            options={(Object.keys(RANGES) as Array<keyof typeof RANGES>).map((k) => ({ value: k, label: k }))}
-          />
+          <>
+            <Button size="sm" variant="outline" onClick={() => setQueuesOpen(true)} data-tour="check-queues">
+              <Layers /> Check Queues
+            </Button>
+            <Segmented
+              label="Time range"
+              size="sm"
+              value={range}
+              onChange={setRange}
+              options={(Object.keys(RANGES) as Array<keyof typeof RANGES>).map((k) => ({ value: k, label: k }))}
+            />
+          </>
         }
       />
       <div className="grid w-full max-w-[1600px] gap-4 px-4 sm:px-8 py-6">
@@ -173,6 +180,7 @@ export function DashboardPage() {
         </div>
       </div>
       <PauseDialog open={confirm} onOpenChange={setConfirm} onConfirm={(reason) => pause.mutateAsync(reason || 'manual (admin UI)')} />
+      <QueuesDialog open={queuesOpen} onOpenChange={setQueuesOpen} />
     </>
   );
 }

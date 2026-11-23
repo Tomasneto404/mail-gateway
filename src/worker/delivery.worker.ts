@@ -8,6 +8,8 @@ import { GatewayStateService } from '../gateway-state/gateway-state.service';
 import { MessagesRepository } from '../messages/messages.repository';
 import { DELIVERY_QUEUE, DeliveryJob, QUEUE_PREFIX, redisConnection } from '../queue/queue.service';
 import { MetricsService } from '../metrics/metrics.service';
+import { instrumentWorker } from '../metrics/worker-instrumentation';
+import { WORKER_METRICS } from '../queue/queue-metrics';
 import { CircuitBreakerService } from './circuit-breaker';
 import { ProvidersRegistry } from './providers.registry';
 import { OutboundMessage, ProviderName, gatewayHeaders } from './providers/provider';
@@ -36,7 +38,9 @@ export class DeliveryWorker implements OnApplicationBootstrap, OnApplicationShut
       concurrency: this.cfg.WORKER_CONCURRENCY,
       // Global rate limit protecting the provider (shared by all worker replicas via Redis).
       limiter: { max: this.cfg.GLOBAL_RATE_MAX, duration: this.cfg.GLOBAL_RATE_DURATION_MS },
+      metrics: WORKER_METRICS,
     });
+    instrumentWorker(this.worker, DELIVERY_QUEUE, this.metrics);
     this.worker.on('error', (err) => this.events.emit('delivery_failed', { outcome: 'failure', reason: 'worker_error', error: err.message }));
   }
 

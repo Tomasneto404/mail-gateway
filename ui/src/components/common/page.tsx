@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 
 export function PageHeader({ title, description, actions }: { title: ReactNode; description?: ReactNode; actions?: ReactNode }) {
   return (
-    <div className="flex min-h-20 flex-wrap items-center justify-between gap-3 border-b px-4 sm:px-8 py-4">
+    <div className="flex min-h-20 shrink-0 flex-wrap items-center justify-between gap-3 border-b px-4 sm:px-8 py-4">
       <div className="min-w-0">
         <h1 className="text-xl leading-7 font-medium">{title}</h1>
         {description && <p className="text-secondary-foreground text-sm">{description}</p>}

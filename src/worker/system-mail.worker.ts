@@ -1,5 +1,8 @@
 // Authored by Tomás Neto (TN 2026)
-import { Inject, Injectable, OnApplicationBootstrap, OnApplicationShutdown } from '@nestjs/common';
+import { Inject, Injectable, OnApplicationBootstrap, OnApplicationShutdown, Optional } from '@nestjs/common';
+import { MetricsService } from '../metrics/metrics.service';
+import { instrumentWorker } from '../metrics/worker-instrumentation';
+import { WORKER_METRICS } from '../queue/queue-metrics';
 import { Job, UnrecoverableError, Worker } from 'bullmq';
 import { randomUUID } from 'node:crypto';
 import { APP_CONFIG, AppConfig, systemMailProvider } from '../config/config';
@@ -16,6 +19,7 @@ export class SystemMailWorker implements OnApplicationBootstrap, OnApplicationSh
     @Inject(APP_CONFIG) private readonly cfg: AppConfig,
     private readonly providers: ProvidersRegistry,
     private readonly events: EventLogger,
+    @Optional() private readonly metrics?: MetricsService,
   ) {}
 
   onApplicationBootstrap() {
@@ -23,7 +27,9 @@ export class SystemMailWorker implements OnApplicationBootstrap, OnApplicationSh
       connection: redisConnection(this.cfg.REDIS_URL),
       prefix: QUEUE_PREFIX,
       concurrency: 2,
+      metrics: WORKER_METRICS,
     });
+    instrumentWorker(this.worker, SYSTEM_MAIL_QUEUE, this.metrics);
     this.worker.on('error', () => undefined);
   }
 

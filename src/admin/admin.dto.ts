@@ -287,6 +287,62 @@ export class SystemStateDto {
   @ApiProperty({ type: CheckDto }) smtpHealth!: CheckDto;
 }
 
+// ---------------------------------------------------------------- queues (BullMQ)
+export class QueueCountsDto {
+  @ApiProperty({ description: 'Ready to run (includes jobs held while the queue is paused)' }) waiting!: number;
+  @ApiProperty() active!: number;
+  @ApiProperty({ description: 'Scheduled for later: retries in backoff, parked jobs, repeatable jobs' }) delayed!: number;
+  @ApiProperty() prioritized!: number;
+  @ApiProperty() waitingChildren!: number;
+  @ApiProperty({ description: 'Failed after all attempts and still kept' }) failed!: number;
+  @ApiProperty({ description: 'Completed and still kept (each queue trims these)' }) completed!: number;
+}
+export class QueueWindowDto {
+  @ApiProperty() completed!: number;
+  @ApiProperty() failed!: number;
+}
+export class QueuePerMinuteDto {
+  @ApiProperty({ type: [Number], description: 'Last 60 minutes, oldest first' }) completed!: number[];
+  @ApiProperty({ type: [Number], description: 'Last 60 minutes, oldest first' }) failed!: number[];
+}
+export class QueueTimingsDto {
+  @ApiProperty({ description: 'Recently completed jobs the figures are taken from' }) sampled!: number;
+  @ApiProperty({ description: 'Of those, jobs that needed more than one attempt' }) retried!: number;
+  @ApiProperty({ type: Number, nullable: true, description: 'Time from due to started, first-attempt jobs' }) waitP50Ms!: number | null;
+  @ApiProperty({ type: Number, nullable: true }) waitP95Ms!: number | null;
+  @ApiProperty({ type: Number, nullable: true, description: 'Processing time of the last attempt' }) runP50Ms!: number | null;
+  @ApiProperty({ type: Number, nullable: true }) runP95Ms!: number | null;
+  @ApiProperty({ type: Number, nullable: true }) runMaxMs!: number | null;
+}
+export class QueueFailureDto {
+  @ApiProperty({ description: 'Job id (for delivery jobs, the message id)' }) id!: string;
+  @ApiProperty() name!: string;
+  @ApiProperty({ type: String, nullable: true }) reason!: string | null;
+  @ApiProperty() attempts!: number;
+  @ApiProperty({ type: String, nullable: true }) at!: string | null;
+}
+export class QueueStatusDto {
+  @ApiProperty() name!: string;
+  @ApiProperty() description!: string;
+  @ApiProperty({ enum: ['ok', 'warn', 'down'] }) health!: 'ok' | 'warn' | 'down';
+  @ApiProperty() healthReason!: string;
+  @ApiProperty() paused!: boolean;
+  @ApiProperty({ description: 'Connected worker processes; -1 when Redis does not allow CLIENT LIST' }) workers!: number;
+  @ApiProperty({ type: QueueCountsDto }) counts!: QueueCountsDto;
+  @ApiProperty({ type: Number, nullable: true }) oldestWaitingSeconds!: number | null;
+  @ApiProperty({ type: QueueWindowDto }) lastHour!: QueueWindowDto;
+  @ApiProperty({ type: QueueWindowDto }) lastDay!: QueueWindowDto;
+  @ApiProperty({ type: QueuePerMinuteDto }) perMinute!: QueuePerMinuteDto;
+  @ApiProperty({ type: QueueTimingsDto }) timings!: QueueTimingsDto;
+  @ApiProperty({ type: [QueueFailureDto], nullable: true, description: 'null when the caller may not see this queue\'s failure reasons' })
+  recentFailures!: QueueFailureDto[] | null;
+}
+export class QueuesOverviewDto {
+  @ApiProperty() at!: string;
+  @ApiProperty({ description: 'A job waiting longer than this marks the queue as backlogged' }) backlogSeconds!: number;
+  @ApiProperty({ type: [QueueStatusDto] }) queues!: QueueStatusDto[];
+}
+
 export class RoleRefDto {
   @ApiProperty() id!: string;
   @ApiProperty() name!: string;

@@ -257,7 +257,7 @@ function Shell() {
           </span>
         </div>
         <Sheet open={mobileNav} onOpenChange={setMobileNav}>
-          <SheetContent side="left" className="bg-sidebar flex w-72 flex-col gap-0 p-0" aria-describedby={undefined}>
+          <SheetContent side="left" className="bg-sidebar w-72 p-0" bodyClassName="gap-0" aria-describedby={undefined}>
             <SheetTitle className="sr-only">Navigation</SheetTitle>
             {sidebar(true)}
           </SheetContent>

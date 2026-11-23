@@ -278,7 +278,7 @@ The gateway's state is always in view as a **signal light** at the top of the si
 
 | Screen | What you can do |
 |---|---|
-| **Dashboard** | Gateway state, breaker state per provider, relay health and pause/resume. Traffic chart with delivered mail above the axis and policy rejections below it, accepted/delivered/rejected/failed counts, pending approvals, top keys and rejections by reason |
+| **Dashboard** | Gateway state, breaker state per provider, relay health and pause/resume. Traffic chart with delivered mail above the axis and policy rejections below it, accepted/delivered/rejected/failed counts, pending approvals, top keys and rejections by reason. **Check Queues** opens a live view of every BullMQ queue |
 | **API keys** | List with today's/hour's usage against quota. Create wizard that shows the secret once. Key page with policy editor (mode with a live-promotion warning, sender, recipient chips, source IPs and expiry, quotas and warm-up, attachments, link domains and secret blocking, templates, provider), sender-domain check, 24 h usage chart, recent messages, rotate (with a grace period), enable/disable, delete and **Send test email** |
 | **Messages** | Search by status, key, recipient, subject and date range. Detail drawer with the message's route (received → queued → delivered / failed, or stopped by policy), metadata, status timeline, attempts, provider response, headers and text body. The HTML body is shown in a sandboxed iframe |
 | **Approvals** | Inbox of `pending_approval` messages with preview, approve/reject (with reason) and bulk actions |
@@ -465,6 +465,24 @@ API keys, the admin token, cookies, SMTP credentials and message bodies are neve
 `mg_circuit_breaker_state{provider}`, `mg_circuit_breaker_trips_total{provider}`, `mg_delivery_outcomes_total{outcome,key}`,
 and process metrics (`mg_process_*`).
 
+**Queues (BullMQ).** All four queues (`delivery`, `system-mail`, `alerts`, `maintenance`) are measured:
+
+| Metric | Process | What it tells you |
+|---|---|---|
+| `mg_queue_jobs{queue,state}` | api | Jobs waiting, active, delayed, prioritized, failed and completed (kept) |
+| `mg_queue_oldest_waiting_seconds{queue}` | api | Age of the oldest job ready to run: the clearest sign of a stuck queue |
+| `mg_queue_workers{queue}` | api | Worker processes connected (0 = nothing is consuming) |
+| `mg_queue_paused{queue}` | api | 1 while paused (the delivery queue pauses with the gateway) |
+| `mg_queue_jobs_processed_total{queue,outcome}` | worker | `completed`, `failed` (no attempts left) and `retried` |
+| `mg_queue_job_wait_seconds{queue}` | worker | Time from due to started, first attempts |
+| `mg_queue_job_duration_seconds{queue,outcome}` | worker | Processing time per attempt |
+
+`mg_queue_depth{state}` (delivery only) stays for existing dashboards. Workers also record BullMQ's own per-minute completed/failed counts in Redis (one day).
+
+The same picture is in the admin UI: **Check Queues** on the dashboard opens a live view (refreshed every 5 s) with each queue's state, counts, workers, oldest waiting job, completed and failed per minute for the last hour, wait and run times (p50/p95) and retries from the last 200 completed jobs, and the most recent failures. Failure reasons are shown only to roles that may see that queue's content (`messages:read` for delivery, `users:read` for system mail, `alerts:read` for alerts). API: `GET /admin/queues` (`dashboard:read`).
+
+<img src="docs/images/queues.png" alt="Check Queues dialog: all four queues healthy in a summary table (waiting, running, done and failed in the last hour, a per-minute bar strip); the delivery row is open with its per-minute chart, current state and typical and slow wait and run times" width="100%">
+
 **Health.**
 - `/health/live` is the liveness probe.
 - `/health/ready` checks Postgres, Redis and TCP reachability of the SMTP relay. Use it for the HAProxy backend check.
@@ -530,6 +548,11 @@ npm run test -w ui             # UI component tests (PolicyEditor)
 npm run build -w ui            # UI static build → ui/dist (served at /ui)
 npm run dev -w ui              # Vite dev server on :5173, proxying /admin and /v1 to :3000
 npm run dev:api / dev:worker   # nest --watch (needs DATABASE_URL, REDIS_URL)
+
+# load test (Python 3.9+, standard library only); refuses live keys unless --allow-live
+MG_API_KEY=mk_sbx_… python3 scripts/stress_test.py --url http://localhost:3000 --scenario mixed -n 2000 -c 32 --poll 50
+#   scenarios: send | mixed (valid + duplicates + bad recipients + CR/LF + idempotent replays) | rejected (nothing queued) | read
+#   python3 scripts/stress_test.py --help for rate limits, duration, JSON output
 
 # end-to-end against a running `docker compose up` (dev override):
 npx playwright install chromium

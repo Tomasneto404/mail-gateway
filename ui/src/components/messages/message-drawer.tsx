@@ -113,7 +113,7 @@ export function MessageDrawer({ id, onClose }: { id: string | undefined; onClose
   const { data: m, isLoading } = useMessage(id);
   return (
     <Sheet open={!!id} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent className="w-full gap-0 overflow-y-auto sm:max-w-2xl">
+      <SheetContent className="w-full sm:max-w-2xl" bodyClassName="gap-0">
         <SheetHeader className="gap-1 border-b px-6 py-5">
           <SheetTitle className="pr-8 text-base leading-6">{m?.subject || (isLoading ? 'Loading' : '(no subject)')}</SheetTitle>
           <SheetDescription className="font-mono text-xs">{id}</SheetDescription>

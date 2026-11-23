@@ -42,8 +42,13 @@ function SheetOverlay({
   )
 }
 
+/**
+ * The panel never scrolls; its body does, so the close button stays in place and the scrollbar
+ * (themed in index.css) runs inside the panel. Layout classes for the content go in `bodyClassName`.
+ */
 function SheetContent({
   className,
+  bodyClassName,
   children,
   side = "right",
   showCloseButton = true,
@@ -51,6 +56,7 @@ function SheetContent({
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: "top" | "right" | "bottom" | "left"
   showCloseButton?: boolean
+  bodyClassName?: string
 }) {
   return (
     <SheetPortal>
@@ -58,7 +64,7 @@ function SheetContent({
       <SheetPrimitive.Content
         data-slot="sheet-content"
         className={cn(
-          "fixed z-50 flex flex-col gap-4 bg-background shadow-lg transition ease-in-out data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:animate-in data-[state=open]:duration-500",
+          "fixed z-50 flex flex-col overflow-hidden bg-background shadow-lg transition ease-in-out data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:animate-in data-[state=open]:duration-500",
           side === "right" &&
             "inset-y-0 right-0 h-full w-3/4 border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm",
           side === "left" &&
@@ -71,9 +77,11 @@ function SheetContent({
         )}
         {...props}
       >
-        {children}
+        <div data-slot="sheet-body" className={cn("flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain", bodyClassName)}>
+          {children}
+        </div>
         {showCloseButton && (
-          <SheetPrimitive.Close className="absolute top-4 right-4 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none data-[state=open]:bg-secondary">
+          <SheetPrimitive.Close className="absolute top-4 right-5 rounded-xs bg-inherit opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus:outline-hidden disabled:pointer-events-none data-[state=open]:bg-secondary">
             <XIcon className="size-4" />
             <span className="sr-only">Close</span>
           </SheetPrimitive.Close>

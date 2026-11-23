@@ -1,5 +1,8 @@
 // Authored by Tomás Neto (TN 2026)
-import { Inject, Injectable, OnApplicationBootstrap, OnApplicationShutdown } from '@nestjs/common';
+import { Inject, Injectable, OnApplicationBootstrap, OnApplicationShutdown, Optional } from '@nestjs/common';
+import { MetricsService } from '../metrics/metrics.service';
+import { instrumentWorker } from '../metrics/worker-instrumentation';
+import { WORKER_METRICS } from '../queue/queue-metrics';
 import { Worker } from 'bullmq';
 import { APP_CONFIG, AppConfig } from '../config/config';
 import { AuditChainService } from '../admin/audit-chain.service';
@@ -20,6 +23,7 @@ export class RetentionService implements OnApplicationBootstrap, OnApplicationSh
     private readonly events: EventLogger,
     private readonly chain: AuditChainService,
     private readonly alerts: AlertsService,
+    @Optional() private readonly metrics?: MetricsService,
   ) {}
 
   async onApplicationBootstrap() {
@@ -28,7 +32,10 @@ export class RetentionService implements OnApplicationBootstrap, OnApplicationSh
       connection: redisConnection(this.cfg.REDIS_URL),
       prefix: QUEUE_PREFIX,
       concurrency: 1,
+      metrics: WORKER_METRICS,
     });
+    this.worker.on('error', () => undefined);
+    instrumentWorker(this.worker, MAINTENANCE_QUEUE, this.metrics);
   }
 
   async onApplicationShutdown() {

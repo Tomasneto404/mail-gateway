@@ -29,6 +29,7 @@ import { parseDomainLimits, parseWarmupSchedule } from '../policy/sending-limits
 import { AuditChainService } from './audit-chain.service';
 import { KeysService } from '../keys/keys.service';
 import { QuotaService } from '../policy/quota.service';
+import { QueueInspector } from '../queue/queue-inspector.service';
 import { SendAcceptedDto } from '../send/send.dto';
 import { SendService } from '../send/send.service';
 import { AdminAuditService } from './admin-audit.service';
@@ -57,6 +58,7 @@ import {
   PermissionDto,
   RoleDto,
   RoleListDto,
+  QueuesOverviewDto,
   SettingsDto,
   StatsOverviewDto,
   SystemStateDto,
@@ -449,6 +451,22 @@ export class AdminStatsController {
   @ApiOkResponse({ type: SystemStateDto })
   system() {
     return this.stats.system();
+  }
+}
+
+@AdminController('admin/queues')
+export class AdminQueuesController {
+  constructor(private readonly inspector: QueueInspector) {}
+
+  @Get()
+  @RequirePermission('dashboard:read')
+  @ApiOperation({
+    operationId: 'adminQueues',
+    summary: 'BullMQ queues: job counts, workers, oldest waiting job, throughput, wait/run times, recent failures',
+  })
+  @ApiOkResponse({ type: QueuesOverviewDto })
+  overview(@Req() req: AdminRequest) {
+    return this.inspector.overview((perm) => can(req.actor, perm));
   }
 }
 

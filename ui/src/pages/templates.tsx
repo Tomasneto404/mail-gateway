@@ -67,7 +67,7 @@ function TemplateEditor({ template, open, onOpenChange, canManage }: { template:
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full gap-0 overflow-y-auto sm:max-w-3xl">
+      <SheetContent className="w-full sm:max-w-3xl" bodyClassName="gap-0">
         <SheetHeader className="border-b px-6 py-5">
           <SheetTitle>{template ? template.name : 'New template'}</SheetTitle>
           <SheetDescription>Variables are written {'{{name}}'}. Values are HTML-escaped in the HTML body; clients must provide every variable.</SheetDescription>
