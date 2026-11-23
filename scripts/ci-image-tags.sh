@@ -7,9 +7,11 @@
 #   REGISTRY       vars.DOCKERHUB_URL         optional, default docker.io (scheme optional)
 #   REPOSITORY     vars.DOCKERHUB_REPOSITORY  e.g. tnetomos/mail-gateway
 #   INPUT_VERSION  workflow_dispatch input    bare semver, optional
+#   RELEASE_TAGS   extra tags for every release (not pre-releases, not dev builds), space or
+#                  comma separated, optional. The Forgejo workflow sets "prod".
 #   GITHUB_REF / GITHUB_SHA / GITHUB_SERVER_URL / GITHUB_REPOSITORY   (set by the runner)
 #
-# Tags:  release 1.2.3        → 1.2.3, 1.2, latest, sha-<commit>
+# Tags:  release 1.2.3        → 1.2.3, 1.2, latest, <RELEASE_TAGS>, sha-<commit>
 #        pre-release 1.3.0-rc.1 → 1.3.0-rc.1, sha-<commit>
 #        no version            → dev, sha-<commit>
 # The migrations image gets the same tags with a "-migrate" suffix (same repository).
@@ -35,7 +37,15 @@ if [ -n "$version" ]; then
     echo "::error::version must be semver like 1.2.0 or 1.3.0-rc.1 (got '$version')" >&2; exit 1
   fi
   tags+=("$version")
-  if [[ "$version" != *-* ]]; then tags+=("${version%.*}" "latest"); fi
+  if [[ "$version" != *-* ]]; then
+    tags+=("${version%.*}" "latest")
+    for t in ${RELEASE_TAGS//,/ }; do
+      if ! [[ "$t" =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$ ]]; then
+        echo "::error::invalid tag '$t' in RELEASE_TAGS" >&2; exit 1
+      fi
+      tags+=("$t")
+    done
+  fi
 else
   tags+=("dev")
 fi

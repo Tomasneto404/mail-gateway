@@ -589,7 +589,7 @@ npx vitest run
 
 | Image | Tags |
 |---|---|
-| runtime (api + worker) | `<repo>:1.2.3`, `:1.2`, `:latest`, `:sha-<commit>` |
+| runtime (api + worker) | `<repo>:1.2.3`, `:1.2`, `:latest`, `:sha-<commit>`, and on Forgejo also `:prod` |
 | migrations | the same tags with `-migrate`, e.g. `<repo>:1.2.3-migrate` |
 
 - **Verify before push:** both targets are first built locally (linux/amd64) and checked as the non-root `node` user.
@@ -598,7 +598,8 @@ npx vitest run
   - Nothing is pushed if either check fails. The `Dockerfile` makes the built files world-readable, so a restrictive umask on the runner cannot produce an image that fails at start-up.
 - **Trigger:** push a tag `v1.2.3`, or run the workflow manually.
   - A manual run takes an optional version. Without one, it tags `:dev` and `:sha-<commit>` only.
-  - Pre-releases (`1.3.0-rc.1`) never move `:latest`.
+  - Pre-releases (`1.3.0-rc.1`) never move `:latest` or `:prod`.
+  - **Forgejo:** every release also moves `:prod` / `:prod-migrate`, so a production host can follow `MAIL_GATEWAY_TAG=prod`. The extra tags come from `RELEASE_TAGS` in the workflow (space or comma separated).
 - **Forgejo runner:** the job runs in `node:22-alpine` and installs the docker CLI and buildx with `apk`.
   - It builds through the runner's host Docker daemon (act_runner `container.docker_host: automount`) with plain `docker build`/`docker push`.
   - It builds `linux/amd64` only, so `DOCKERHUB_PLATFORMS` applies to GitHub only.
