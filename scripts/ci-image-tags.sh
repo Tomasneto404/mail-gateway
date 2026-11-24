@@ -29,6 +29,7 @@ short="${sha:0:12}"
 
 version="${INPUT_VERSION:-}"
 version="${version#v}"
+release_tags="${RELEASE_TAGS:-}" # unset on GitHub; the Forgejo workflow sets it (prod)
 if [ -z "$version" ] && [[ "${GITHUB_REF:-}" == refs/tags/v* ]]; then version="${GITHUB_REF#refs/tags/v}"; fi
 
 tags=()
@@ -39,7 +40,7 @@ if [ -n "$version" ]; then
   tags+=("$version")
   if [[ "$version" != *-* ]]; then
     tags+=("${version%.*}" "latest")
-    for t in ${RELEASE_TAGS//,/ }; do
+    for t in ${release_tags//,/ }; do
       if ! [[ "$t" =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$ ]]; then
         echo "::error::invalid tag '$t' in RELEASE_TAGS" >&2; exit 1
       fi
