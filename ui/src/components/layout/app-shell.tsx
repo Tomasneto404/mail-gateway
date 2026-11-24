@@ -5,6 +5,7 @@ import {
   Activity,
   Bell,
   BookOpen,
+  Check,
   CheckCheck,
   FileText,
   Fingerprint,
@@ -206,16 +207,16 @@ function Shell() {
                 </span>
               </span>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
-              <DropdownMenuLabel className="text-xs">Theme</DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="w-60">
+              <DropdownMenuLabel>Theme</DropdownMenuLabel>
               <DropdownMenuItem onClick={() => setTheme('light')}>
-                <Sun className="size-4" /> Light {theme === 'light' && '✓'}
+                <Sun className="size-4" /> Light {theme === 'light' && <Check className="text-foreground ml-auto size-4" aria-label="current" />}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setTheme('dark')}>
-                <Moon className="size-4" /> Dark {theme === 'dark' && '✓'}
+                <Moon className="size-4" /> Dark {theme === 'dark' && <Check className="text-foreground ml-auto size-4" aria-label="current" />}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setTheme('system')}>
-                <Monitor className="size-4" /> System {theme === 'system' && '✓'}
+                <Monitor className="size-4" /> System {theme === 'system' && <Check className="text-foreground ml-auto size-4" aria-label="current" />}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setTwoFactor(true)}>

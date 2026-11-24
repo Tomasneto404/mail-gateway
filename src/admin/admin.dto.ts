@@ -287,8 +287,16 @@ export class SystemStateDto {
   @ApiProperty({ type: CheckDto }) smtpHealth!: CheckDto;
 }
 
+export class SandboxSettingsDto {
+  @ApiProperty({ type: String, nullable: true, description: 'Mailpit UI as the browser reaches it; null = no "Sandbox Messages" link' }) uiUrl!: string | null;
+  @ApiProperty({ type: String, nullable: true, description: 'Mailpit as the API container reaches it; null = defaultApiUrl' }) apiUrl!: string | null;
+  @ApiProperty({ description: 'Used when apiUrl is not set: http://<MAILPIT_SMTP_HOST>:8025' }) defaultApiUrl!: string;
+  @ApiProperty({ type: String, nullable: true }) updatedAt!: string | null;
+  @ApiProperty({ type: String, nullable: true }) updatedBy!: string | null;
+}
+
 export class SandboxInboxDto {
-  @ApiProperty({ description: 'MAILPIT_UI_URL is set' }) configured!: boolean;
+  @ApiProperty({ description: 'A Mailpit link is set on the Settings page' }) configured!: boolean;
   @ApiProperty({ type: String, nullable: true, description: 'Mailpit UI as the browser reaches it' }) url!: string | null;
   @ApiProperty({ description: 'Mailpit answered its API from the gateway' }) available!: boolean;
   @ApiProperty({ type: Number, nullable: true, description: 'Messages in Mailpit, when known' }) messages!: number | null;
@@ -492,7 +500,6 @@ export class SettingsDto {
   @ApiProperty({ type: ResendSettingsDto }) resend!: ResendSettingsDto;
   @ApiProperty() mailpitSmtp!: string;
   @ApiProperty({ type: SystemMailSettingsDto }) systemMail!: SystemMailSettingsDto;
-  @ApiProperty({ type: String, nullable: true }) mailpitUiUrl!: string | null;
   @ApiProperty() bodyRetentionDays!: number;
   @ApiProperty() recordRetentionDays!: number;
   @ApiProperty() retentionCron!: string;

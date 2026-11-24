@@ -1,5 +1,5 @@
 // Authored by Tomás Neto (TN 2026)
-import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Patch, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Patch, Post, Put, Query, Req, Res, UseGuards } from '@nestjs/common';
 import {
   ApiAcceptedResponse,
   ApiBearerAuth,
@@ -35,7 +35,7 @@ import { SendService } from '../send/send.service';
 import { AdminAuditService } from './admin-audit.service';
 import { AdminAuthGuard, AdminRequest, RequirePermission, can } from './admin-auth.guard';
 import { AdminMessagesService } from './admin-messages.service';
-import { SandboxInboxService } from './sandbox-inbox.service';
+import { SandboxInboxService, UpdateSandboxSettingsDto } from './sandbox-inbox.service';
 import { ExportService } from './export.service';
 import { auditWhere, parseAuditQuery, parseMessageQuery, qUuid } from './filters';
 import type { CsvDelimiter } from '../common/csv';
@@ -61,6 +61,7 @@ import {
   RoleListDto,
   QueuesOverviewDto,
   SandboxInboxDto,
+  SandboxSettingsDto,
   SettingsDto,
   StatsOverviewDto,
   SystemStateDto,
@@ -662,7 +663,27 @@ export class AdminAuditController {
 
 @AdminController('admin/settings')
 export class AdminSettingsController {
-  constructor(@Inject(APP_CONFIG) private readonly cfg: AppConfig) {}
+  constructor(
+    @Inject(APP_CONFIG) private readonly cfg: AppConfig,
+    private readonly sandbox: SandboxInboxService,
+  ) {}
+
+  @Get('sandbox')
+  @RequirePermission('settings:read')
+  @ApiOperation({ operationId: 'adminSandboxSettings', summary: 'Mailpit links used by "Sandbox Messages" (edited in the UI, not the environment)' })
+  @ApiOkResponse({ type: SandboxSettingsDto })
+  sandboxSettings() {
+    return this.sandbox.settings();
+  }
+
+  @Put('sandbox')
+  @RequirePermission('settings:manage')
+  @ApiOperation({ operationId: 'adminUpdateSandboxSettings', summary: 'Set the Mailpit links. Empty or null removes the link (uiUrl) or falls back to the default (apiUrl).' })
+  @ApiBody({ type: UpdateSandboxSettingsDto })
+  @ApiOkResponse({ type: SandboxSettingsDto })
+  updateSandboxSettings(@Req() req: AdminRequest, @Body() body: unknown) {
+    return this.sandbox.update(body, req.actor);
+  }
 
   @Get()
   @RequirePermission('settings:read')
@@ -676,7 +697,6 @@ export class AdminSettingsController {
       resend: { enabled: c.RESEND_ENABLED, webhookConfigured: !!c.RESEND_WEBHOOK_SECRET },
       mailpitSmtp: `${c.MAILPIT_SMTP_HOST}:${c.MAILPIT_SMTP_PORT}`,
       systemMail: { enabled: systemMailProvider(c) !== null, from: c.SYSTEM_MAIL_FROM ?? null, provider: systemMailProvider(c) },
-      mailpitUiUrl: c.MAILPIT_UI_URL ?? null,
       bodyRetentionDays: c.AUDIT_BODY_RETENTION_DAYS,
       recordRetentionDays: c.AUDIT_RECORD_RETENTION_DAYS,
       retentionCron: c.RETENTION_CRON,

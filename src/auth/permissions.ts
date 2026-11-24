@@ -27,6 +27,7 @@ export const PERMISSIONS = [
   { id: 'alerts:manage', area: 'alerts', label: 'Create, edit, test and delete alert channels' },
   { id: 'audit:read', area: 'audit', label: 'View the activity log and verify its integrity' },
   { id: 'settings:read', area: 'settings', label: 'View the effective configuration' },
+  { id: 'settings:manage', area: 'settings', label: 'Change settings editable in the UI (sandbox inbox link)' },
 ] as const;
 
 export type PermissionId = (typeof PERMISSIONS)[number]['id'];

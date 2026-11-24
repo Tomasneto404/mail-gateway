@@ -12,6 +12,7 @@ import { MessageDrawer } from '@/components/messages/message-drawer';
 import { SandboxInboxButton } from '@/components/messages/sandbox-inbox-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { FilterSelect } from '@/components/ui/select';
 import { useMe } from '@/lib/auth';
 import { fmtAgo, fmtShort } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -81,19 +82,14 @@ export function MessagesPage() {
       <div className="flex flex-wrap items-center gap-2 border-b px-4 sm:px-8 py-3" data-tour="filters">
         <Input placeholder="Subject" className="h-8 w-52" defaultValue={filters.subject} onChange={(e) => set({ subject: e.target.value || undefined })} />
         <Input placeholder="Recipient (exact)" className="h-8 w-52" defaultValue={filters.recipient} onBlur={(e) => set({ recipient: e.target.value.trim() || undefined })} />
-        <select
+        <FilterSelect
           aria-label="Key"
-          className="border-input bg-card h-8 rounded-md border px-2.5 text-sm"
-          value={filters.keyId ?? ''}
-          onChange={(e) => set({ keyId: e.target.value || undefined })}
-        >
-          <option value="">All keys</option>
-          {keys.data?.items.map((k) => (
-            <option key={k.id} value={k.id}>
-              {k.name}
-            </option>
-          ))}
-        </select>
+          className="w-48"
+          value={filters.keyId}
+          onChange={(v) => set({ keyId: v })}
+          allLabel="All keys"
+          options={(keys.data?.items ?? []).map((k) => ({ value: k.id, label: <span className="font-mono text-xs">{k.name}</span> }))}
+        />
         <label className="text-secondary-foreground flex items-center gap-2 text-sm">
           From
           <input type="date" aria-label="From date" className="border-input bg-card h-8 rounded-md border px-2.5 text-sm" value={filters.from?.slice(0, 10) ?? ''} onChange={(e) => set({ from: e.target.value ? new Date(e.target.value).toISOString() : undefined })} />

@@ -10,6 +10,7 @@ import { Callout, PageHeader } from '@/components/common/page';
 import { Button } from '@/components/ui/button';
 import { DataTable, type Column } from '@/components/data-table/data-table';
 import { Input } from '@/components/ui/input';
+import { FilterSelect } from '@/components/ui/select';
 import { fmtTime } from '@/lib/format';
 
 type Entry = Schemas['AuditEntryDto'];
@@ -65,7 +66,6 @@ export function ActivityPage() {
   const { data, isLoading } = useAudit(q);
   const verify = useVerifyAudit();
   const set = (patch: Partial<AuditParams>) => navigate({ to: '/activity', search: { ...search, page: 1, ...patch } as never, replace: true });
-  const sel = 'border-input h-8 rounded-md border bg-transparent px-2 text-sm';
   return (
     <>
       <PageHeader
@@ -104,25 +104,38 @@ export function ActivityPage() {
         </div>
       )}
       <div className="flex flex-wrap items-center gap-2 border-b px-4 sm:px-8 py-3">
-        <select aria-label="Action" className={sel} value={search.action ?? ''} onChange={(e) => set({ action: e.target.value || undefined })}>
-          <option value="">All actions</option>
-          {data?.actions.map((a) => (
-            <option key={a} value={a}>
-              {a}
-            </option>
-          ))}
-        </select>
-        <select aria-label="Actor type" className={sel} value={search.actorType ?? ''} onChange={(e) => set({ actorType: (e.target.value || undefined) as AuditParams['actorType'] })}>
-          <option value="">All actors</option>
-          {['user', 'token', 'cli', 'system'].map((a) => (
-            <option key={a}>{a}</option>
-          ))}
-        </select>
-        <select aria-label="Outcome" className={sel} value={search.outcome ?? ''} onChange={(e) => set({ outcome: (e.target.value || undefined) as AuditParams['outcome'] })}>
-          <option value="">Any outcome</option>
-          <option value="success">success</option>
-          <option value="failure">failure</option>
-        </select>
+        <FilterSelect
+          aria-label="Action"
+          className="w-52"
+          value={search.action}
+          onChange={(v) => set({ action: v })}
+          allLabel="All actions"
+          options={(data?.actions ?? []).map((a) => ({ value: a, label: <span className="font-mono text-xs">{a}</span> }))}
+        />
+        <FilterSelect
+          aria-label="Actor type"
+          className="w-36"
+          value={search.actorType}
+          onChange={(v) => set({ actorType: v as AuditParams['actorType'] })}
+          allLabel="All actors"
+          options={[
+            { value: 'user', label: 'User' },
+            { value: 'token', label: 'Admin token' },
+            { value: 'cli', label: 'CLI' },
+            { value: 'system', label: 'System' },
+          ]}
+        />
+        <FilterSelect
+          aria-label="Outcome"
+          className="w-36"
+          value={search.outcome}
+          onChange={(v) => set({ outcome: v as AuditParams['outcome'] })}
+          allLabel="Any outcome"
+          options={[
+            { value: 'success', label: 'Success' },
+            { value: 'failure', label: 'Failure' },
+          ]}
+        />
         <Input placeholder="Actor" className="h-8 w-52" defaultValue={search.actor} onChange={(e) => set({ actor: e.target.value || undefined })} />
         {search.actorId && <ScopeChip label="User" value={userLabel ?? search.actorId.slice(0, 8)} onClear={() => set({ actorId: undefined })} />}
         {search.keyId && <ScopeChip label="API key" value={keyLabel ?? search.keyId.slice(0, 8)} onClear={() => set({ keyId: undefined })} />}

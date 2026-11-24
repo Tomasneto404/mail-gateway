@@ -280,14 +280,14 @@ The gateway's state is always in view as a **signal light** at the top of the si
 |---|---|
 | **Dashboard** | Gateway state, breaker state per provider, relay health and pause/resume. Traffic chart with delivered mail above the axis and policy rejections below it, accepted/delivered/rejected/failed counts, pending approvals, top keys and rejections by reason. **Check Queues** opens a live view of every BullMQ queue |
 | **API keys** | List with today's/hour's usage against quota. Create wizard that shows the secret once. Key page with policy editor (mode with a live-promotion warning, sender, recipient chips, source IPs and expiry, quotas and warm-up, attachments, link domains and secret blocking, templates, provider), sender-domain check, 24 h usage chart, recent messages, rotate (with a grace period), enable/disable, delete and **Send test email** |
-| **Messages** | Search by status, key, recipient, subject and date range. Detail drawer with the message's route (received → queued → delivered / failed, or stopped by policy), metadata, status timeline, attempts, provider response, headers and text body. The HTML body is shown in a sandboxed iframe. **Sandbox Messages** opens Mailpit (with its message count) when `MAILPIT_UI_URL` is set; it is shown only to roles with `messages:bodies`, since Mailpit shows full bodies without the gateway's access control, and is disabled while Mailpit does not answer (`MAILPIT_API_URL`, default `http://<MAILPIT_SMTP_HOST>:8025`) |
+| **Messages** | Search by status, key, recipient, subject and date range. Detail drawer with the message's route (received → queued → delivered / failed, or stopped by policy), metadata, status timeline, attempts, provider response, headers and text body. The HTML body is shown in a sandboxed iframe. **Sandbox Messages** opens Mailpit (with its message count) when a Mailpit URL is set on **Settings → Sandbox**; it is shown only to roles with `messages:bodies`, since Mailpit shows full bodies without the gateway's access control, and is disabled while Mailpit does not answer at the health check URL (same card, default `http://<MAILPIT_SMTP_HOST>:8025`) |
 | **Approvals** | Inbox of `pending_approval` messages with preview, approve/reject (with reason) and bulk actions |
 | **Admin users** | Invite a user with roles (one-time link), edit roles, reset 2FA, reset password, disable, delete |
 | **Roles** | RBAC: create/edit roles as sets of permissions, map Authentik groups to roles |
 | **Templates** | Server-side templates with `{{variables}}`, preview with sample values, which keys allow each one |
 | **Alerts** | Channels (HMAC-signed webhook, Slack, email) with per-type subscriptions and a test button; alert history |
 | **Activity log** | The `admin_audit` table, filterable by action, actor and outcome, and scoped per user or per API key. **Verify integrity** checks the hash chain |
-| **Settings** | Effective configuration, read-only and without secrets. Includes the Mailpit link in dev |
+| **Settings** | Effective configuration without secrets, read-only except **Sandbox**: the Mailpit URL people open from Messages and the internal URL used to check it (stored in the database, changed with `settings:manage`, recorded in the activity log) |
 
 <table>
   <tr>
@@ -379,7 +379,7 @@ Confirmations:
   Users are created on first login, and their roles are re-synced from their groups at every login. See [docs/authentik.md](docs/authentik.md).
 - **Roles (RBAC).** Each role is a set of permissions, and a user can hold several roles; they get the union of the permissions.
   - Permissions: `dashboard:read`, `keys:read|create|update|promote|rotate|disable|delete|test_send`, `messages:read|bodies`,
-    `approvals:decide`, `gateway:pause`, `users:read|manage`, `roles:manage`, `templates:read|manage`, `alerts:read|manage`, `audit:read`, `settings:read`.
+    `approvals:decide`, `gateway:pause`, `users:read|manage`, `roles:manage`, `templates:read|manage`, `alerts:read|manage`, `audit:read`, `settings:read|manage`.
     A role can also hold `<area>:*` or `*`.
   - Built-in roles:
 

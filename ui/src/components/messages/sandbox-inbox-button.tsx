@@ -6,7 +6,7 @@ import { useMe } from '@/lib/auth';
 import { fmtNum } from '@/lib/format';
 
 /**
- * Opens Mailpit, where sandbox keys deliver. Shown only when MAILPIT_UI_URL is configured and to roles
+ * Opens Mailpit, where sandbox keys deliver. Shown only when a Mailpit link is set (Settings → Sandbox) and to roles
  * with messages:bodies (Mailpit shows full bodies without the gateway's access control). Disabled
  * while Mailpit does not answer.
  */

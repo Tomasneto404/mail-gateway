@@ -211,6 +211,19 @@ model GatewayState {
   @@map("gateway_state")
 }
 
+/// Singleton row (id = 1): settings changed from the admin UI (Settings page) instead of the environment.
+model GatewaySettings {
+  id            Int      @id @default(1)
+  /// Mailpit UI as the browser reaches it ("Sandbox Messages" link). Null = no link.
+  sandboxUiUrl  String?  @map("sandbox_ui_url")
+  /// Mailpit as the API container reaches it (health + count). Null = http://<MAILPIT_SMTP_HOST>:8025
+  sandboxApiUrl String?  @map("sandbox_api_url")
+  updatedBy     String?  @map("updated_by")
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("gateway_settings")
+}
+
 /// Append-only, tamper-evident: every row carries HMAC(prevHash + row) (see AuditChainService).
 model AdminAudit {
   id         String   @id @default(uuid(7)) @db.Uuid

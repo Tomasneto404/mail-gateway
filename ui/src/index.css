@@ -44,6 +44,9 @@
   --sidebar: #f4f4f5;
   --sidebar-active: #ffffff;
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.05);
+  /* floating layers (menus, selects): the only place with a real drop shadow */
+  --shadow-pop: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px -4px rgb(0 0 0 / 0.1);
+  --menu-hover: rgb(23 23 23 / 0.05);
   --chart-lead: #2457d6;
   --chart-neg: #dc2626;
   --chart-neutral: #d4d4d8;
@@ -54,7 +57,7 @@
   --foreground: #ededed;
   --card: #19191b;
   --card-foreground: #ededed;
-  --popover: #19191b;
+  --popover: #1f1f21;
   --popover-foreground: #ededed;
   --brand: #6f9bff;
   --primary: #ededed;
@@ -75,6 +78,8 @@
   --sidebar: #0f0f10;
   --sidebar-active: #232325;
   --shadow-sm: inset 0 1px 0 rgb(255 255 255 / 0.06);
+  --shadow-pop: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 12px 32px -8px rgb(0 0 0 / 0.6);
+  --menu-hover: rgb(237 237 237 / 0.07);
   --chart-lead: #6f9bff;
   --chart-neg: #e5484d;
   --chart-neutral: #3a3a3e;
@@ -142,6 +147,13 @@
   }
   body {
     @apply bg-background text-foreground font-sans text-sm;
+  }
+  /* Safety net for any native list (Firefox/GTK paint it with the OS theme otherwise): the UI uses
+     the themed Select from components/ui/select instead. */
+  option,
+  optgroup {
+    background-color: var(--popover);
+    color: var(--popover-foreground);
   }
   ::selection {
     background: color-mix(in srgb, var(--brand) 22%, transparent);

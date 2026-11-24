@@ -2909,7 +2909,7 @@
             "type": "boolean"
           },
           "configured": {
-            "description": "MAILPIT_UI_URL is set",
+            "description": "A Mailpit link is set on the Settings page",
             "type": "boolean"
           },
           "messages": {
@@ -2928,6 +2928,40 @@
           "url",
           "available",
           "messages"
+        ],
+        "type": "object"
+      },
+      "SandboxSettingsDto": {
+        "properties": {
+          "apiUrl": {
+            "description": "Mailpit as the API container reaches it; null = defaultApiUrl",
+            "nullable": true,
+            "type": "string"
+          },
+          "defaultApiUrl": {
+            "description": "Used when apiUrl is not set: http://<MAILPIT_SMTP_HOST>:8025",
+            "type": "string"
+          },
+          "uiUrl": {
+            "description": "Mailpit UI as the browser reaches it; null = no \"Sandbox Messages\" link",
+            "nullable": true,
+            "type": "string"
+          },
+          "updatedAt": {
+            "nullable": true,
+            "type": "string"
+          },
+          "updatedBy": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "uiUrl",
+          "apiUrl",
+          "defaultApiUrl",
+          "updatedAt",
+          "updatedBy"
         ],
         "type": "object"
       },
@@ -3156,10 +3190,6 @@
           "mailpitSmtp": {
             "type": "string"
           },
-          "mailpitUiUrl": {
-            "nullable": true,
-            "type": "string"
-          },
           "maxRequestBytes": {
             "type": "number"
           },
@@ -3218,7 +3248,6 @@
           "resend",
           "mailpitSmtp",
           "systemMail",
-          "mailpitUiUrl",
           "bodyRetentionDays",
           "recordRetentionDays",
           "retentionCron",
@@ -3748,6 +3777,21 @@
               "type": "string"
             },
             "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateSandboxSettingsDto": {
+        "properties": {
+          "apiUrl": {
+            "description": "Mailpit as the API container reaches it (health and count). Empty or null = http://<MAILPIT_SMTP_HOST>:8025.",
+            "nullable": true,
+            "type": "string"
+          },
+          "uiUrl": {
+            "description": "Mailpit UI as the browser reaches it, e.g. https://mailpit.example.com. Empty or null removes the link.",
+            "nullable": true,
+            "type": "string"
           }
         },
         "type": "object"
@@ -6448,6 +6492,74 @@
           }
         ],
         "summary": "Effective configuration (read-only, never secrets)",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/settings/sandbox": {
+      "get": {
+        "operationId": "adminSandboxSettings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxSettingsDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "summary": "Mailpit links used by \"Sandbox Messages\" (edited in the UI, not the environment)",
+        "tags": [
+          "admin"
+        ]
+      },
+      "put": {
+        "operationId": "adminUpdateSandboxSettings",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSandboxSettingsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxSettingsDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "summary": "Set the Mailpit links. Empty or null removes the link (uiUrl) or falls back to the default (apiUrl).",
         "tags": [
           "admin"
         ]

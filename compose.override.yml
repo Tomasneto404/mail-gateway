@@ -7,6 +7,5 @@ services:
       - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"
   api:
     environment:
-      MAILPIT_UI_URL: http://localhost:${MAILPIT_UI_PORT:-8025}
       # plain-http local development only
       COOKIE_SECURE: "false"

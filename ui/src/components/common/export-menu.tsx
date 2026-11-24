@@ -22,7 +22,7 @@ export function ExportMenu({ path, params, label = 'Export CSV', size = 'sm' }: 
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60">
-        <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">Uses the current filters (max rows applies)</DropdownMenuLabel>
+        <DropdownMenuLabel>Uses the current filters (max rows applies)</DropdownMenuLabel>
         <DropdownMenuItem asChild>
           <a href={exportUrl(path, params)} download data-testid="export-csv">
             CSV (comma separated)

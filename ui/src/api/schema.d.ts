@@ -896,6 +896,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/settings/sandbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Mailpit links used by "Sandbox Messages" (edited in the UI, not the environment) */
+        get: operations["adminSandboxSettings"];
+        /** Set the Mailpit links. Empty or null removes the link (uiUrl) or falls back to the default (apiUrl). */
+        put: operations["adminUpdateSandboxSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/stats/overview": {
         parameters: {
             query?: never;
@@ -1918,12 +1936,22 @@ export interface components {
         SandboxInboxDto: {
             /** @description Mailpit answered its API from the gateway */
             available: boolean;
-            /** @description MAILPIT_UI_URL is set */
+            /** @description A Mailpit link is set on the Settings page */
             configured: boolean;
             /** @description Messages in Mailpit, when known */
             messages: number | null;
             /** @description Mailpit UI as the browser reaches it */
             url: string | null;
+        };
+        SandboxSettingsDto: {
+            /** @description Mailpit as the API container reaches it; null = defaultApiUrl */
+            apiUrl: string | null;
+            /** @description Used when apiUrl is not set: http://<MAILPIT_SMTP_HOST>:8025 */
+            defaultApiUrl: string;
+            /** @description Mailpit UI as the browser reaches it; null = no "Sandbox Messages" link */
+            uiUrl: string | null;
+            updatedAt: string | null;
+            updatedBy: string | null;
         };
         SendAcceptedDto: {
             /** @description Message id. Use GET /v1/messages/{id} to follow delivery. */
@@ -2008,7 +2036,6 @@ export interface components {
             liveProvider: "smtp" | "resend";
             localLogin: boolean;
             mailpitSmtp: string;
-            mailpitUiUrl: string | null;
             maxRequestBytes: number;
             recipientDomainLimits: components["schemas"]["DomainLimitDto"][];
             recordRetentionDays: number;
@@ -2173,6 +2200,12 @@ export interface components {
             name?: string;
             permissions?: string[];
             ssoGroups?: string[];
+        };
+        UpdateSandboxSettingsDto: {
+            /** @description Mailpit as the API container reaches it (health and count). Empty or null = http://<MAILPIT_SMTP_HOST>:8025. */
+            apiUrl?: string | null;
+            /** @description Mailpit UI as the browser reaches it, e.g. https://mailpit.example.com. Empty or null removes the link. */
+            uiUrl?: string | null;
         };
         UpdateTemplateDto: {
             /** @description What the template is for (shown to API clients in GET /v1/templates). */
@@ -3590,6 +3623,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SettingsDto"];
+                };
+            };
+        };
+    };
+    adminSandboxSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxSettingsDto"];
+                };
+            };
+        };
+    };
+    adminUpdateSandboxSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSandboxSettingsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxSettingsDto"];
                 };
             };
         };

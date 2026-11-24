@@ -1,8 +1,8 @@
 // Authored by Tomás Neto (TN 2026)
-import { ExternalLink } from 'lucide-react';
 import { useSettings } from '@/api/queries';
 import { Signal } from '@/components/common/badges';
 import { KV, PageHeader } from '@/components/common/page';
+import { SandboxSettingsCard } from '@/components/settings/sandbox-settings-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { fmtBytes } from '@/lib/format';
@@ -17,7 +17,7 @@ export function SettingsPage() {
   const { data: s } = useSettings();
   return (
     <>
-      <PageHeader title="Settings" description="Effective configuration, read-only. Change it through environment variables; secrets are never shown" />
+      <PageHeader title="Settings" description="Effective configuration. The sandbox links are edited here; everything else comes from environment variables. Secrets are never shown" />
       {!s ? (
         <div className="px-4 sm:px-8 py-6">
           <Skeleton className="h-48 w-full" />
@@ -52,28 +52,7 @@ export function SettingsPage() {
               />
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Sandbox</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <KV
-                items={[
-                  ['Mailpit SMTP', <span className="font-mono text-xs">{s.mailpitSmtp}</span>],
-                  [
-                    'Mailpit UI',
-                    s.mailpitUiUrl ? (
-                      <a href={s.mailpitUiUrl} target="_blank" rel="noreferrer" className="text-brand inline-flex items-center gap-1 hover:underline">
-                        {s.mailpitUiUrl} <ExternalLink className="size-3" />
-                      </a>
-                    ) : (
-                      'not exposed'
-                    ),
-                  ],
-                ]}
-              />
-            </CardContent>
-          </Card>
+          <SandboxSettingsCard mailpitSmtp={s.mailpitSmtp} />
           <Card>
             <CardHeader>
               <CardTitle>Guardrails</CardTitle>

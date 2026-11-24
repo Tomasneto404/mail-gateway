@@ -177,6 +177,13 @@ export interface AuditParams {
 export const useAudit = (q: AuditParams) =>
   useQuery({ queryKey: ['audit', q], queryFn: () => call(api.GET('/admin/audit', { params: { query: q } })), placeholderData: keepPreviousData });
 export const useSettings = () => useQuery({ queryKey: ['settings'], queryFn: () => call(api.GET('/admin/settings')), staleTime: 300_000 });
+export type SandboxSettings = Schemas['SandboxSettingsDto'];
+export const useSandboxSettings = () => useQuery({ queryKey: ['settings', 'sandbox'], queryFn: () => call(api.GET('/admin/settings/sandbox')) });
+export const useUpdateSandboxSettings = () =>
+  useAction((body: Schemas['UpdateSandboxSettingsDto']) => call(api.PUT('/admin/settings/sandbox', { body })), {
+    invalidate: [['settings', 'sandbox'], ['sandbox-inbox']],
+    success: 'Sandbox links saved',
+  });
 
 // ---------------------------------------------------------------- roles (RBAC)
 export type RoleT = Schemas['RoleDto'];
