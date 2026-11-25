@@ -1118,7 +1118,7 @@ export interface paths {
         put?: never;
         /**
          * Queue an email for delivery
-         * @description Queues one email. The sender (from) is fixed by your API key and cannot be set. All recipients (to, cc, bcc) must be allowed by your key policy, and the message must fit your size, attachment and quota limits; call GET /v1/me first to discover them. Identical messages within the dedup window are rejected with DUPLICATE_MESSAGE (do not loop). To retry safely after a network error, resend with the same Idempotency-Key header: the original message is returned instead of a new one. On error, read error.code and error.message: they say exactly what to change.
+         * @description Queues one email. The sender (from) is fixed by your API key and cannot be set. All recipients (to, cc, bcc) must be allowed by your key policy, and the message must fit your size, attachment and quota limits; call GET /v1/me first to discover them. Identical messages within the dedup window are rejected with DUPLICATE_MESSAGE (do not loop), unless your key has allowDuplicates=true. To retry safely after a network error, resend with the same Idempotency-Key header: the original message is returned instead of a new one. On error, read error.code and error.message: they say exactly what to change.
          */
         post: operations["sendEmail"];
         delete?: never;
@@ -1336,6 +1336,8 @@ export interface components {
             type: "webhook" | "slack" | "email";
         };
         CreateKeyDto: {
+            /** @description Accept identical messages (same recipients, subject and body) inside DEDUP_WINDOW_SECONDS instead of rejecting them with DUPLICATE_MESSAGE (default false). Quotas still apply. */
+            allowDuplicates?: boolean;
             allowReplyTo?: boolean;
             /** @description MIME types allowed as attachments ("application/pdf", "image/*"). Empty = any. Executables are always refused. */
             allowedAttachmentTypes?: string[];
@@ -1343,7 +1345,7 @@ export interface components {
             allowedIps?: string[];
             /** @description Domains links in the body may point to (subdomains included). Empty = any. */
             allowedLinkDomains?: string[];
-            /** @description Exact addresses ("ops@example.com") and/or domains ("@example.com"). Empty = reject everything. */
+            /** @description Exact addresses ("ops@example.com"), domains ("@example.com") and/or "*" (any recipient). Empty = reject everything. */
             allowedRecipients?: string[];
             /** @description Template names the key may use. Empty = any template. */
             allowedTemplates?: string[];
@@ -1488,6 +1490,7 @@ export interface components {
             secret: string;
         };
         KeyDto: {
+            allowDuplicates: boolean;
             allowReplyTo: boolean;
             allowedAttachmentTypes: string[];
             /** @description Source IPs/CIDRs allowed; empty = any */
@@ -1544,6 +1547,7 @@ export interface components {
             hour: number;
         };
         KeyWithUsageDto: {
+            allowDuplicates: boolean;
             allowReplyTo: boolean;
             allowedAttachmentTypes: string[];
             /** @description Source IPs/CIDRs allowed; empty = any */
@@ -1608,13 +1612,15 @@ export interface components {
             redirect?: string | null;
         };
         MeResponseDto: {
+            /** @description true = identical messages are accepted (no DUPLICATE_MESSAGE). false = an identical message (same recipients, subject and body) inside the dedup window is rejected. */
+            allowDuplicates: boolean;
             /** @description Whether replyTo may be set. */
             allowReplyTo: boolean;
             /** @description Allowed attachment MIME types ("image/*" wildcards). Empty = any. Executables are always refused. */
             allowedAttachmentTypes: string[];
             /** @description Domains links in the body may point to (subdomains included). Empty = any. */
             allowedLinkDomains: string[];
-            /** @description Allowed recipients: exact addresses and "@domain" entries. Every to/cc/bcc must match one. */
+            /** @description Allowed recipients: exact addresses, "@domain" entries, or "*" (any recipient). Every to/cc/bcc must match one. */
             allowedRecipients: string[];
             /** @description Templates the key may use. Empty = any. */
             allowedTemplates: string[];
@@ -2149,6 +2155,8 @@ export interface components {
             target?: string;
         };
         UpdateKeyDto: {
+            /** @description Accept identical messages (same recipients, subject and body) inside DEDUP_WINDOW_SECONDS instead of rejecting them with DUPLICATE_MESSAGE (default false). Quotas still apply. */
+            allowDuplicates?: boolean;
             allowReplyTo?: boolean;
             /** @description MIME types allowed as attachments ("application/pdf", "image/*"). Empty = any. Executables are always refused. */
             allowedAttachmentTypes?: string[];
@@ -2156,7 +2164,7 @@ export interface components {
             allowedIps?: string[];
             /** @description Domains links in the body may point to (subdomains included). Empty = any. */
             allowedLinkDomains?: string[];
-            /** @description Exact addresses ("ops@example.com") and/or domains ("@example.com"). Empty = reject everything. */
+            /** @description Exact addresses ("ops@example.com"), domains ("@example.com") and/or "*" (any recipient). Empty = reject everything. */
             allowedRecipients?: string[];
             /** @description Template names the key may use. Empty = any template. */
             allowedTemplates?: string[];

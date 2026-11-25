@@ -33,6 +33,7 @@ const base = {
   blockSecrets: true,
   allowedAttachmentTypes: [],
   scanAttachments: false,
+  allowDuplicates: false,
   templatesOnly: false,
   allowedTemplates: [],
   warmup: true,

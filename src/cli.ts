@@ -37,10 +37,12 @@ const HELP = `mail-gateway CLI (bootstrap/automation without the admin API)
 Usage: npm run cli -- <command> [options]
 
 Keys
-  keys:create  --name <n> --from <addr> [--from-name <s>] [--allow <a,@domain,...>] [--mode sandbox|live|approval]
+  keys:create  --name <n> --from <addr> [--from-name <s>] [--allow <a,@domain,*,...>] [--mode sandbox|live|approval]
                [--quota-hour <n>] [--quota-day <n>] [--max-recipients <n>] [--max-bytes <n>]
                [--reply-to] [--attachments] [--max-attachment-bytes <n>] [--provider smtp|resend|default]
+               [--allow-duplicates]   (accept identical messages; quotas still apply)
                [--description <s>]
+               Boolean flags take a --no- form to switch off, e.g. --no-allow-duplicates
   keys:update  --name <n> [same options as create, plus --enabled true|false]
   keys:list
   keys:show    --name <n>
@@ -86,6 +88,7 @@ const OPTIONS = {
   'max-bytes': { type: 'string' },
   'reply-to': { type: 'boolean' },
   attachments: { type: 'boolean' },
+  'allow-duplicates': { type: 'boolean' },
   'max-attachment-bytes': { type: 'string' },
   provider: { type: 'string' },
   description: { type: 'string' },
@@ -101,7 +104,7 @@ const OPTIONS = {
 
 type Opts = ReturnType<typeof parse>['values'];
 function parse(argv: string[]) {
-  return parseArgs({ args: argv, options: OPTIONS, allowPositionals: true, strict: true });
+  return parseArgs({ args: argv, options: OPTIONS, allowPositionals: true, strict: true, allowNegative: true });
 }
 
 function policyFromOpts(o: Opts): Record<string, unknown> {
@@ -117,6 +120,7 @@ function policyFromOpts(o: Opts): Record<string, unknown> {
   if (o['max-bytes'] !== undefined) p.maxMessageBytes = num(o['max-bytes']);
   if (o['reply-to'] !== undefined) p.allowReplyTo = o['reply-to'];
   if (o.attachments !== undefined) p.attachmentsAllowed = o.attachments;
+  if (o['allow-duplicates'] !== undefined) p.allowDuplicates = o['allow-duplicates'];
   if (o['max-attachment-bytes'] !== undefined) p.maxAttachmentBytes = num(o['max-attachment-bytes']);
   if (o.provider !== undefined) p.liveProvider = o.provider === 'default' ? null : o.provider;
   if (o.description !== undefined) p.description = o.description;

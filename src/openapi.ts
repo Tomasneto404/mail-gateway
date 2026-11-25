@@ -8,7 +8,7 @@ Central mail-sending gateway for internal applications and LLM agents.
 
 **How to use it (agents: read this):**
 1. Authenticate every request with \`Authorization: Bearer mk_...\` (your API key).
-2. Call \`GET /v1/me\` first. It tells you your fixed sender, which recipients you may email (exact addresses or "@domain"),
+2. Call \`GET /v1/me\` first. It tells you your fixed sender, which recipients you may email (exact addresses, "@domain", or "*" for anyone),
    size limits, whether attachments/replyTo are allowed, and your remaining hourly/daily quota.
 3. Send with \`POST /v1/send\`. Only recipients allowed by your policy are accepted; the sender cannot be changed.
 4. Follow delivery with \`GET /v1/messages/{id}\`.

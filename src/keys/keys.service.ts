@@ -39,6 +39,7 @@ export interface PolicyView {
   blockSecrets: boolean;
   allowedAttachmentTypes: string[];
   scanAttachments: boolean;
+  allowDuplicates: boolean;
   templatesOnly: boolean;
   allowedTemplates: string[];
   warmup: boolean;
@@ -88,6 +89,7 @@ export function toPolicyView(k: ApiKey, warmupSchedule: number[] = []): PolicyVi
     blockSecrets: k.blockSecrets,
     allowedAttachmentTypes: k.allowedAttachmentTypes,
     scanAttachments: k.scanAttachments,
+    allowDuplicates: k.allowDuplicates,
     templatesOnly: k.templatesOnly,
     allowedTemplates: k.allowedTemplates,
     warmup: k.warmup,
@@ -203,6 +205,7 @@ export class KeysService {
         blockSecrets: dto.blockSecrets ?? true,
         allowedAttachmentTypes: dedupe(dto.allowedAttachmentTypes ?? []),
         scanAttachments: dto.scanAttachments ?? false,
+        allowDuplicates: dto.allowDuplicates ?? false,
         templatesOnly: dto.templatesOnly ?? false,
         allowedTemplates: dedupeKeepCase(dto.allowedTemplates ?? []),
         warmup: dto.warmup ?? true,

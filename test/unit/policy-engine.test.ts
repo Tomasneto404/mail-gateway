@@ -56,6 +56,12 @@ describe('matchRecipient', () => {
     expect(matchRecipient('@example.com', ['@example.com'])).toBe(false);
     expect(matchRecipient('noat', ['@example.com'])).toBe(false);
   });
+  it('* matches any well-formed address, not malformed ones', () => {
+    expect(matchRecipient('anyone@anywhere.io', ['*'])).toBe(true);
+    expect(matchRecipient('x@sub.example.com', ['ops@acme.pt', '*'])).toBe(true);
+    expect(matchRecipient('noat', ['*'])).toBe(false);
+    expect(matchRecipient('@example.com', ['*'])).toBe(false);
+  });
 });
 
 describe('enforcePolicy', () => {
@@ -64,6 +70,11 @@ describe('enforcePolicy', () => {
   });
   it('empty allow-list rejects everything', () => {
     expect(codeOf(() => enforcePolicy(policy({ allowedRecipients: [] }), msg()))).toBe('RECIPIENT_NOT_ALLOWED');
+  });
+  it('* allows every recipient, other limits still apply', () => {
+    const any = policy({ allowedRecipients: ['*'] });
+    expect(codeOf(() => enforcePolicy(any, msg({ to: ['a@gmail.com'], cc: ['b@outlook.com'], bcc: ['c@corp.test'] })))).toBeNull();
+    expect(codeOf(() => enforcePolicy(any, msg({ to: ['a@x.io', 'b@x.io', 'c@x.io', 'd@x.io'] })))).toBe('TOO_MANY_RECIPIENTS');
   });
   it('every to/cc/bcc must match, and the error lists offenders + allowed', () => {
     for (const m of [msg({ to: ['bad@evil.io'] }), msg({ cc: ['bad@evil.io'] }), msg({ bcc: ['bad@evil.io'] })]) {

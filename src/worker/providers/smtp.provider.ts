@@ -2,6 +2,7 @@
 import nodemailer, { Transporter } from 'nodemailer';
 import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { DeliveryProvider, ErrorClassification, OutboundMessage, ProviderName, SendOutcome } from './provider';
+import { extractInlineImages } from '../../common/inline-images';
 
 const NETWORK_CODES = new Set(['ECONNECTION', 'ETIMEDOUT', 'ESOCKET', 'EDNS', 'ECONNREFUSED', 'ECONNRESET', 'EHOSTUNREACH', 'ENOTFOUND', 'EPIPE', 'ETLS', 'EPROTOCOL']);
 /** Server-wide (not per-recipient) SMTP replies: service unavailable, TLS/auth problems. */
@@ -69,6 +70,7 @@ export class SmtpProvider implements DeliveryProvider {
   }
 
   async send(m: OutboundMessage): Promise<SendOutcome> {
+    const inline = m.html ? extractInlineImages(m.html, m.gatewayMessageId) : { html: m.html, images: [] };
     const info = await this.transport.sendMail({
       from: m.from.name ? { name: m.from.name, address: m.from.address } : m.from.address,
       to: m.to,
@@ -77,10 +79,13 @@ export class SmtpProvider implements DeliveryProvider {
       replyTo: m.replyTo ?? undefined,
       subject: m.subject,
       text: m.text ?? undefined,
-      html: m.html ?? undefined,
+      html: inline.html ?? undefined,
       messageId: m.headerMessageId,
       headers: m.headers,
-      attachments: m.attachments.map((a) => ({ filename: a.filename, contentType: a.contentType, content: a.content })),
+      attachments: [
+        ...m.attachments.map((a) => ({ filename: a.filename, contentType: a.contentType, content: a.content })),
+        ...inline.images.map((i) => ({ filename: i.filename, contentType: i.contentType, content: i.content, cid: i.cid, contentDisposition: 'inline' as const })),
+      ],
       disableFileAccess: true,
       disableUrlAccess: true,
     });

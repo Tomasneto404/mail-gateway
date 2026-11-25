@@ -36,7 +36,7 @@ export class PublicController {
     description:
       'Queues one email. The sender (from) is fixed by your API key and cannot be set. All recipients (to, cc, bcc) must be allowed by your key policy, ' +
       'and the message must fit your size, attachment and quota limits; call GET /v1/me first to discover them. ' +
-      'Identical messages within the dedup window are rejected with DUPLICATE_MESSAGE (do not loop). ' +
+      'Identical messages within the dedup window are rejected with DUPLICATE_MESSAGE (do not loop), unless your key has allowDuplicates=true. ' +
       'To retry safely after a network error, resend with the same Idempotency-Key header: the original message is returned instead of a new one. ' +
       'On error, read error.code and error.message: they say exactly what to change.',
   })

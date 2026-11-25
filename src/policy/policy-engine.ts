@@ -1,6 +1,7 @@
 // Authored by Tomás Neto (TN 2026)
 import { createHash } from 'node:crypto';
 import { GatewayError } from '../common/errors';
+import { ANY_RECIPIENT } from '../common/validators';
 
 /** The subset of a key's policy the pure engine needs. */
 export interface PolicySnapshot {
@@ -32,7 +33,7 @@ export interface NormalizedMessage {
 
 export const normalizeAddress = (a: string) => a.trim().toLowerCase();
 
-/** Exact address match, or `@domain` match on the exact domain (not subdomains). */
+/** Exact address match, `@domain` match on the exact domain (not subdomains), or `*` for any address. */
 export function matchRecipient(address: string, allowed: string[]): boolean {
   const addr = normalizeAddress(address);
   const at = addr.lastIndexOf('@');
@@ -40,7 +41,7 @@ export function matchRecipient(address: string, allowed: string[]): boolean {
   const domain = addr.slice(at);
   for (const rule of allowed) {
     const r = normalizeAddress(rule);
-    if (r.startsWith('@') ? r === domain : r === addr) return true;
+    if (r === ANY_RECIPIENT || (r.startsWith('@') ? r === domain : r === addr)) return true;
   }
   return false;
 }
@@ -79,7 +80,7 @@ export function enforcePolicy(p: PolicySnapshot, m: NormalizedMessage): void {
     throw new GatewayError(
       'RECIPIENT_NOT_ALLOWED',
       `Recipient(s) ${notAllowed.join(', ')} not allowed by key "${p.name}". Allowed: ${p.allowedRecipients.join(', ')}. ` +
-        'Every to/cc/bcc address must match an exact address or an "@domain" entry. Remove them, or call GET /v1/me to see your policy.',
+        'Every to/cc/bcc address must match an exact address, an "@domain" entry or "*". Remove them, or call GET /v1/me to see your policy.',
       { notAllowed, allowedRecipients: p.allowedRecipients },
     );
   }

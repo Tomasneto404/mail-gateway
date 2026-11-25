@@ -134,8 +134,12 @@ export class SendService {
       if (key.scanAttachments) await this.clamav.assertClean(key.name, msg.attachments);
       const provider = this.resolveProvider(key);
 
-      dedupHash = computeDedupHash(key.id, msg);
-      await this.dedup.claim(dedupHash, key.name);
+      const contentHash = computeDedupHash(key.id, msg);
+      // Keys with allowDuplicates skip the claim (the hash is still stored); quotas still apply.
+      if (!key.allowDuplicates) {
+        dedupHash = contentHash; // set before the claim: a rejected claim is not released below
+        await this.dedup.claim(contentHash, key.name);
+      }
 
       const warmup = keyWarmup(key, this.warmupSchedule);
       ticket = await this.quota.consume({
@@ -166,7 +170,7 @@ export class SendService {
         htmlBody: msg.html ?? null,
         templateName,
         bodyHash: computeBodyHash(msg),
-        dedupHash,
+        dedupHash: contentHash,
         idempotencyKey: idem ?? null,
         metadata: (dto.metadata ?? undefined) as Prisma.InputJsonValue | undefined,
         sourceIp: ctx.sourceIp ?? null,

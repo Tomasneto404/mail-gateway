@@ -39,6 +39,7 @@ export function toForm(k: KeyPolicy): PolicyForm {
     blockSecrets: k.blockSecrets ?? true,
     allowedAttachmentTypes: k.allowedAttachmentTypes ?? [],
     scanAttachments: k.scanAttachments ?? false,
+    allowDuplicates: k.allowDuplicates ?? false,
     templatesOnly: k.templatesOnly ?? false,
     allowedTemplates: k.allowedTemplates ?? [],
     warmup: k.warmup ?? true,
@@ -270,6 +271,13 @@ export function PolicyEditor({ policy, readOnly, onSave, providers, templates, c
           )}
           <ToggleCard title="Warm-up" description="Ramp the daily volume up over the first days out of sandbox">
             <Controller control={control} name="warmup" render={({ field }) => <Switch aria-label="Warm-up" checked={field.value} onCheckedChange={field.onChange} />} />
+          </ToggleCard>
+          <ToggleCard title="Allow repeated messages" description="Accept identical messages instead of rejecting them as a loop; quotas still apply">
+            <Controller
+              control={control}
+              name="allowDuplicates"
+              render={({ field }) => <Switch aria-label="Allow repeated messages" checked={field.value} onCheckedChange={field.onChange} />}
+            />
           </ToggleCard>
         </Section>
 

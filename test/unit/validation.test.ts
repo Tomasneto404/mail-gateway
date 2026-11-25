@@ -24,11 +24,13 @@ describe('address validators', () => {
     expect(isPlainEmail('user@localhost')).toBe(false);
     expect(isPlainEmail('a..b@example.com')).toBe(false);
   });
-  it('recipient rules: exact address or @domain', () => {
+  it('recipient rules: exact address, @domain or * (anyone)', () => {
     expect(isRecipientRule('@example.com')).toBe(true);
     expect(isRecipientRule('ops@example.com')).toBe(true);
+    expect(isRecipientRule('*')).toBe(true);
     expect(isRecipientRule('example.com')).toBe(false);
     expect(isRecipientRule('@*.example.com')).toBe(false);
+    expect(isRecipientRule('**')).toBe(false);
   });
 });
 
@@ -68,5 +70,9 @@ describe('CreateKeyDto', () => {
     const d = await validateDto(CreateKeyDto, { name: 'k1', fromAddress: 'A@Example.com', allowedRecipients: ['@Example.COM'] });
     expect(d.allowedRecipients).toEqual(['@example.com']);
     expect(d.fromAddress).toBe('a@example.com');
+  });
+  it('accepts * (any recipient) next to other rules', async () => {
+    const d = await validateDto(CreateKeyDto, { name: 'k1', fromAddress: 'a@example.com', allowedRecipients: ['*', '@example.com'] });
+    expect(d.allowedRecipients).toEqual(['*', '@example.com']);
   });
 });

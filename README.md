@@ -15,12 +15,12 @@ The guardrails are the product:
 
 | Guardrail | What it does |
 |---|---|
-| Per-key policy | Fixed sender, recipient allow-list (exact address or `@domain`), recipient/size/attachment limits |
+| Per-key policy | Fixed sender, recipient allow-list (exact address, `@domain` or `*` for anyone), recipient/size/attachment limits |
 | Sandbox by default | New keys only reach Mailpit until an admin promotes them |
 | Approval mode | A message waits until an admin approves it |
 | Quotas | Per key per hour and per day. Also a global hourly acceptance cap |
 | Global rate limit | Paces deliveries to the provider across all workers |
-| Dedup | Identical message (key + recipients + subject + body) within 10 min → `DUPLICATE_MESSAGE`. Catches agent loops |
+| Dedup | Identical message (key + recipients + subject + body) within 10 min → `DUPLICATE_MESSAGE`. Catches agent loops; a key can opt out with `allowDuplicates` |
 | Idempotency | Same `Idempotency-Key` within 24 h returns the original message |
 | Circuit breaker | Repeated provider failures automatically pause the whole gateway |
 | Content guardrails | Allowed link domains, max links, secrets in bodies (keys, tokens, card/bank numbers), attachment types checked against their content, optional ClamAV |
@@ -122,6 +122,7 @@ docker compose exec api node dist/cli.js keys:create \
 ```
 
 The secret (`mk_sbx_...`) is printed **once**; only its SHA-256 hash is stored. New keys are always in `sandbox` mode.
+To let a key email anyone, use `--allow '*'` (quoted, so the shell does not expand it).
 
 You can also use the **admin UI** (API keys → New key), which walks you through it and shows the secret once.
 For automation there is the admin API with the static token; set `ADMIN_TOKEN_ENABLED=true`, as it's disabled by default:
@@ -176,7 +177,7 @@ docker compose exec api node dist/cli.js keys:update --name report-agent --mode 
 | `fromAddress` | required | Fixed sender. Clients cannot override it (`FROM_NOT_ALLOWED`) |
 | `fromName` | `null` | Optional display name |
 | `allowReplyTo` | `false` | Whether clients may set `replyTo` |
-| `allowedRecipients` | `[]` | Exact addresses and/or `@domain` entries (exact domain, no subdomains). **Empty = reject everything.** Every to/cc/bcc must match |
+| `allowedRecipients` | `[]` | Exact addresses, `@domain` entries (exact domain, no subdomains) and/or `*` (any recipient, in every mode; quotas, `maxRecipientsPerMessage` and `RECIPIENT_DOMAIN_LIMITS` still apply). **Empty = reject everything.** Every to/cc/bcc must match |
 | `maxRecipientsPerMessage` | `DEFAULT_MAX_RECIPIENTS` (10) | Applies to to + cc + bcc |
 | `maxMessageBytes` | 1 MB | Subject + text + html + decoded attachments |
 | `quotaPerHour` / `quotaPerDay` | 50 / 200 | Accepted messages per UTC hour/day |
@@ -190,6 +191,7 @@ docker compose exec api node dist/cli.js keys:update --name report-agent --mode 
 | `blockSecrets` | `true` | Refuses bodies with cloud/API keys, tokens, private keys, passwords in URLs, card numbers (Luhn) and IBANs (`CONTENT_BLOCKED`) |
 | `allowedAttachmentTypes` | `[]` | MIME types (`image/*` wildcards). The content is checked against the declared type. Executables and scripts are always refused (`ATTACHMENT_TYPE_NOT_ALLOWED`) |
 | `scanAttachments` | `false` | ClamAV scan (`CLAMAV_HOST`), fail-closed (`ATTACHMENT_INFECTED`, `ATTACHMENT_SCAN_UNAVAILABLE`) |
+| `allowDuplicates` | `false` | Accept identical messages inside the dedup window instead of `DUPLICATE_MESSAGE` (UI: Options → Allow repeated messages; CLI: `--allow-duplicates` / `--no-allow-duplicates`). Quotas still apply |
 | `templatesOnly` | `false` | Only server-side templates may be sent (`TEMPLATE_REQUIRED`) |
 | `allowedTemplates` | `[]` | Template names the key may use (`TEMPLATE_NOT_ALLOWED`). Empty = any |
 | `warmup` | `true` | After the key first leaves sandbox, the daily quota is capped by `WARMUP_SCHEDULE` (day 1, 2, …) |
@@ -211,6 +213,8 @@ curl -s localhost:3000/v1/send -H "Authorization: Bearer $KEY" -H 'Content-Type:
 ```
 
 Templates are managed on the **Templates** page (`templates:read` / `templates:manage`), with a preview. A key with `templatesOnly` can only send templates, which removes free-form content (and prompt-injected text) from what it can emit.
+
+The HTML body can be loaded from a file (**Load file**): pick the `.htm`/`.html` page together with the images it uses. The page is decoded with its own character set (Word and Outlook save in windows-1252), Word markup is cleaned up, and the images are embedded. On delivery, embedded images are sent as inline attachments (`cid:`), which Gmail and Outlook display; they count toward `maxMessageBytes`.
 
 ### Send request (`POST /v1/send`)
 

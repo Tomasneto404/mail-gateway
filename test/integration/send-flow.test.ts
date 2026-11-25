@@ -114,6 +114,24 @@ describe('policy rejections are explicit, audited and logged', () => {
     expect(await s.prisma.message.count({ where: { apiKeyId: key.id, rejectCode: 'DUPLICATE_MESSAGE' } })).toBe(1);
   });
 
+  it('allowDuplicates accepts identical messages, each counted against the quota', async () => {
+    const { key, secret } = await createKey(s, { name: uname('rep'), allowDuplicates: true });
+    const body = { to: 'a@example.com', subject: 'repeat', text: 'same body' };
+    const a = await s.http.post('/v1/send').set(auth(secret)).send(body);
+    const b = await s.http.post('/v1/send').set(auth(secret)).send(body);
+    expect([a.status, b.status]).toEqual([202, 202]);
+    expect(a.body.id).not.toBe(b.body.id);
+    const me = await s.http.get('/v1/me').set(auth(secret));
+    expect(me.body.allowDuplicates).toBe(true);
+    expect(me.body.usage.hour.used).toBe(2);
+    expect(await s.prisma.message.count({ where: { apiKeyId: key.id, rejectCode: 'DUPLICATE_MESSAGE' } })).toBe(0);
+
+    // switching it off restores loop protection
+    expect((await s.http.patch(`/admin/keys/${key.id}`).set(admin).send({ allowDuplicates: false })).status).toBe(200);
+    expect((await s.http.post('/v1/send').set(auth(secret)).send({ ...body, subject: 'repeat 2' })).status).toBe(202);
+    expect((await s.http.post('/v1/send').set(auth(secret)).send({ ...body, subject: 'repeat 2' })).body.error.code).toBe('DUPLICATE_MESSAGE');
+  });
+
   it('Idempotency-Key returns the original message', async () => {
     const { key, secret } = await createKey(s, { name: uname('idem') });
     const body = { to: 'a@example.com', subject: 'idem', text: 'x' };

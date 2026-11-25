@@ -1,7 +1,7 @@
 // Authored by Tomás Neto (TN 2026)
 import { X } from 'lucide-react';
 import { useState, type KeyboardEvent } from 'react';
-import { isRecipientRule } from '@/lib/schemas';
+import { ANY_RECIPIENT, isRecipientRule } from '@/lib/schemas';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -11,7 +11,7 @@ interface Props {
   id?: string;
 }
 
-/** Allowed recipients as chips. Accepts exact addresses ("ops@example.com") or domains ("@example.com"). */
+/** Allowed recipients as chips. Accepts exact addresses ("ops@example.com"), domains ("@example.com") or "*" (anyone). */
 export function RecipientChipsInput({ value, onChange, disabled, id }: Props) {
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +21,7 @@ export function RecipientChipsInput({ value, onChange, disabled, id }: Props) {
     if (!parts.length) return true;
     const bad = parts.filter((p) => !isRecipientRule(p));
     if (bad.length) {
-      setError(`"${bad[0]}" is not valid. Use an exact address (ops@example.com) or a domain (@example.com).`);
+      setError(`"${bad[0]}" is not valid. Use an exact address (ops@example.com), a domain (@example.com) or * for anyone.`);
       return false;
     }
     const next = [...value];
@@ -56,7 +56,7 @@ export function RecipientChipsInput({ value, onChange, disabled, id }: Props) {
         )}
       >
         {value.map((v) => (
-          <span key={v} data-testid="recipient-chip" className="bg-secondary inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-mono text-xs">
+          <span key={v} data-testid="recipient-chip" title={v === ANY_RECIPIENT ? 'Any recipient' : undefined} className="bg-secondary inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-mono text-xs">
             {v}
             {!disabled && (
               <button type="button" aria-label={`Remove ${v}`} className="hover:text-destructive" onClick={() => onChange(value.filter((x) => x !== v))}>
@@ -70,7 +70,7 @@ export function RecipientChipsInput({ value, onChange, disabled, id }: Props) {
           aria-label="Add allowed recipient"
           aria-invalid={!!error}
           className="min-w-40 flex-1 bg-transparent py-0.5 text-sm outline-none placeholder:text-muted-foreground"
-          placeholder={value.length ? '' : '@example.com or ops@example.com — press Enter'}
+          placeholder={value.length ? '' : '@example.com, ops@example.com or * — press Enter'}
           value={draft}
           disabled={disabled}
           onChange={(e) => {
@@ -94,6 +94,8 @@ export function RecipientChipsInput({ value, onChange, disabled, id }: Props) {
         </p>
       ) : value.length === 0 ? (
         <p className="text-warning-foreground mt-1 text-xs">Empty allow-list: this key cannot send to anyone</p>
+      ) : value.includes(ANY_RECIPIENT) ? (
+        <p className="text-warning-foreground mt-1 text-xs">* allows any recipient. Quotas, recipient limits and domain caps still apply</p>
       ) : null}
     </div>
   );

@@ -77,6 +77,7 @@ export class KeyDto {
   @ApiProperty() blockSecrets!: boolean;
   @ApiProperty({ type: [String] }) allowedAttachmentTypes!: string[];
   @ApiProperty() scanAttachments!: boolean;
+  @ApiProperty() allowDuplicates!: boolean;
   @ApiProperty() templatesOnly!: boolean;
   @ApiProperty({ type: [String] }) allowedTemplates!: string[];
   @ApiProperty() warmup!: boolean;

@@ -678,6 +678,10 @@
       },
       "CreateKeyDto": {
         "properties": {
+          "allowDuplicates": {
+            "description": "Accept identical messages (same recipients, subject and body) inside DEDUP_WINDOW_SECONDS instead of rejecting them with DUPLICATE_MESSAGE (default false). Quotas still apply.",
+            "type": "boolean"
+          },
           "allowReplyTo": {
             "type": "boolean"
           },
@@ -703,7 +707,7 @@
             "type": "array"
           },
           "allowedRecipients": {
-            "description": "Exact addresses (\"ops@example.com\") and/or domains (\"@example.com\"). Empty = reject everything.",
+            "description": "Exact addresses (\"ops@example.com\"), domains (\"@example.com\") and/or \"*\" (any recipient). Empty = reject everything.",
             "items": {
               "type": "string"
             },
@@ -1159,6 +1163,9 @@
       },
       "KeyDto": {
         "properties": {
+          "allowDuplicates": {
+            "type": "boolean"
+          },
           "allowReplyTo": {
             "type": "boolean"
           },
@@ -1332,6 +1339,7 @@
           "blockSecrets",
           "allowedAttachmentTypes",
           "scanAttachments",
+          "allowDuplicates",
           "templatesOnly",
           "allowedTemplates",
           "warmup",
@@ -1403,6 +1411,9 @@
       },
       "KeyWithUsageDto": {
         "properties": {
+          "allowDuplicates": {
+            "type": "boolean"
+          },
           "allowReplyTo": {
             "type": "boolean"
           },
@@ -1579,6 +1590,7 @@
           "blockSecrets",
           "allowedAttachmentTypes",
           "scanAttachments",
+          "allowDuplicates",
           "templatesOnly",
           "allowedTemplates",
           "warmup",
@@ -1661,6 +1673,10 @@
       },
       "MeResponseDto": {
         "properties": {
+          "allowDuplicates": {
+            "description": "true = identical messages are accepted (no DUPLICATE_MESSAGE). false = an identical message (same recipients, subject and body) inside the dedup window is rejected.",
+            "type": "boolean"
+          },
           "allowReplyTo": {
             "description": "Whether replyTo may be set.",
             "type": "boolean"
@@ -1680,7 +1696,7 @@
             "type": "array"
           },
           "allowedRecipients": {
-            "description": "Allowed recipients: exact addresses and \"@domain\" entries. Every to/cc/bcc must match one.",
+            "description": "Allowed recipients: exact addresses, \"@domain\" entries, or \"*\" (any recipient). Every to/cc/bcc must match one.",
             "items": {
               "type": "string"
             },
@@ -1818,6 +1834,7 @@
           "blockSecrets",
           "allowedAttachmentTypes",
           "scanAttachments",
+          "allowDuplicates",
           "templatesOnly",
           "allowedTemplates",
           "usage"
@@ -3640,6 +3657,10 @@
       },
       "UpdateKeyDto": {
         "properties": {
+          "allowDuplicates": {
+            "description": "Accept identical messages (same recipients, subject and body) inside DEDUP_WINDOW_SECONDS instead of rejecting them with DUPLICATE_MESSAGE (default false). Quotas still apply.",
+            "type": "boolean"
+          },
           "allowReplyTo": {
             "type": "boolean"
           },
@@ -3665,7 +3686,7 @@
             "type": "array"
           },
           "allowedRecipients": {
-            "description": "Exact addresses (\"ops@example.com\") and/or domains (\"@example.com\"). Empty = reject everything.",
+            "description": "Exact addresses (\"ops@example.com\"), domains (\"@example.com\") and/or \"*\" (any recipient). Empty = reject everything.",
             "items": {
               "type": "string"
             },
@@ -4015,7 +4036,7 @@
   },
   "info": {
     "contact": {},
-    "description": "Central mail-sending gateway for internal applications and LLM agents.\n\n**How to use it (agents: read this):**\n1. Authenticate every request with `Authorization: Bearer mk_...` (your API key).\n2. Call `GET /v1/me` first. It tells you your fixed sender, which recipients you may email (exact addresses or \"@domain\"),\n   size limits, whether attachments/replyTo are allowed, and your remaining hourly/daily quota.\n3. Send with `POST /v1/send`. Only recipients allowed by your policy are accepted; the sender cannot be changed.\n4. Follow delivery with `GET /v1/messages/{id}`.\n\n**Errors** always look like `{\"error\":{\"code\":\"...\",\"message\":\"...\",\"details\":{...}}}`. The message says what to change.\nDo not retry `RECIPIENT_NOT_ALLOWED`, `KEY_DISABLED`, `FROM_NOT_ALLOWED` or validation errors unchanged.\nRespect `Retry-After` for `QUOTA_EXCEEDED`, `GLOBAL_RATE_LIMITED` and `GATEWAY_PAUSED`.\n`DUPLICATE_MESSAGE` means you already sent the same message recently: you are probably looping, so stop.\nTo retry safely after a timeout, resend with the same `Idempotency-Key` header.\n\nSandbox keys (`mk_sbx_`) deliver only to a test inbox; nothing reaches real recipients.",
+    "description": "Central mail-sending gateway for internal applications and LLM agents.\n\n**How to use it (agents: read this):**\n1. Authenticate every request with `Authorization: Bearer mk_...` (your API key).\n2. Call `GET /v1/me` first. It tells you your fixed sender, which recipients you may email (exact addresses, \"@domain\", or \"*\" for anyone),\n   size limits, whether attachments/replyTo are allowed, and your remaining hourly/daily quota.\n3. Send with `POST /v1/send`. Only recipients allowed by your policy are accepted; the sender cannot be changed.\n4. Follow delivery with `GET /v1/messages/{id}`.\n\n**Errors** always look like `{\"error\":{\"code\":\"...\",\"message\":\"...\",\"details\":{...}}}`. The message says what to change.\nDo not retry `RECIPIENT_NOT_ALLOWED`, `KEY_DISABLED`, `FROM_NOT_ALLOWED` or validation errors unchanged.\nRespect `Retry-After` for `QUOTA_EXCEEDED`, `GLOBAL_RATE_LIMITED` and `GATEWAY_PAUSED`.\n`DUPLICATE_MESSAGE` means you already sent the same message recently: you are probably looping, so stop.\nTo retry safely after a timeout, resend with the same `Idempotency-Key` header.\n\nSandbox keys (`mk_sbx_`) deliver only to a test inbox; nothing reaches real recipients.",
     "title": "mail-gateway",
     "version": "1"
   },
@@ -7191,7 +7212,7 @@
     },
     "/v1/send": {
       "post": {
-        "description": "Queues one email. The sender (from) is fixed by your API key and cannot be set. All recipients (to, cc, bcc) must be allowed by your key policy, and the message must fit your size, attachment and quota limits; call GET /v1/me first to discover them. Identical messages within the dedup window are rejected with DUPLICATE_MESSAGE (do not loop). To retry safely after a network error, resend with the same Idempotency-Key header: the original message is returned instead of a new one. On error, read error.code and error.message: they say exactly what to change.",
+        "description": "Queues one email. The sender (from) is fixed by your API key and cannot be set. All recipients (to, cc, bcc) must be allowed by your key policy, and the message must fit your size, attachment and quota limits; call GET /v1/me first to discover them. Identical messages within the dedup window are rejected with DUPLICATE_MESSAGE (do not loop), unless your key has allowDuplicates=true. To retry safely after a network error, resend with the same Idempotency-Key header: the original message is returned instead of a new one. On error, read error.code and error.message: they say exactly what to change.",
         "operationId": "sendEmail",
         "parameters": [
           {

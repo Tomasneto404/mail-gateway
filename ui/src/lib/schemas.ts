@@ -6,7 +6,9 @@ export const EMAIL_RE = /^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@(?:[A-Za-z0-9](?:[A-Z
 export const DOMAIN_RULE_RE = /^@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$/;
 
 export const isEmail = (v: string) => EMAIL_RE.test(v) && !v.includes('..') && v.length <= 254;
-export const isRecipientRule = (v: string) => isEmail(v) || DOMAIN_RULE_RE.test(v);
+/** "*" in an allow-list matches every recipient. */
+export const ANY_RECIPIENT = '*';
+export const isRecipientRule = (v: string) => v === ANY_RECIPIENT || isEmail(v) || DOMAIN_RULE_RE.test(v);
 
 export const HOST_RE = /^(?:\*\.)?(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
 export const MIME_RE = /^[\w.+-]+\/(?:\*|[\w.+-]+)$/;
@@ -54,6 +56,7 @@ export const policySchema = z.object({
   blockSecrets: z.boolean(),
   allowedAttachmentTypes: z.array(z.string().refine((v) => MIME_RE.test(v), 'Invalid type')).max(50),
   scanAttachments: z.boolean(),
+  allowDuplicates: z.boolean(),
   templatesOnly: z.boolean(),
   allowedTemplates: z.array(z.string()).max(200),
   warmup: z.boolean(),

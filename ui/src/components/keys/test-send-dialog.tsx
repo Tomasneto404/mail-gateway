@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
 function suggestRecipient(k: KeyPolicy) {
-  const exact = k.allowedRecipients.find((r) => !r.startsWith('@'));
+  const exact = k.allowedRecipients.find((r) => !r.startsWith('@') && r !== '*');
   if (exact) return exact;
   const dom = k.allowedRecipients.find((r) => r.startsWith('@'));
   return dom ? `test${dom}` : '';

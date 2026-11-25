@@ -79,6 +79,8 @@ model ApiKey {
   allowedAttachmentTypes  String[]      @default([]) @map("allowed_attachment_types")
   /// Scan attachments with ClamAV (CLAMAV_HOST)
   scanAttachments         Boolean       @default(false) @map("scan_attachments")
+  /// Skip duplicate detection: identical messages inside DEDUP_WINDOW_SECONDS are accepted
+  allowDuplicates         Boolean       @default(false) @map("allow_duplicates")
   /// Only server-side templates may be sent; free-form subject/text/html are refused
   templatesOnly           Boolean       @default(false) @map("templates_only")
   /// Template names the key may use; empty = any template

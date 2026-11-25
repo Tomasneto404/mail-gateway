@@ -1,5 +1,6 @@
 // Authored by Tomás Neto (TN 2026)
 import { GatewayError } from '../common/errors';
+import { extractInlineImages } from '../common/inline-images';
 import { NormalizedAttachment, NormalizedMessage } from './policy-engine';
 
 /** The content part of a key's policy. */
@@ -197,7 +198,8 @@ export function enforceContent(p: ContentPolicy, m: NormalizedMessage): void {
     const textAttachments = m.attachments
       .filter((a) => /^text\/|json|xml|csv|yaml/i.test(a.contentType) && a.content.length <= 1024 * 1024)
       .map((a) => a.content.toString('utf8'));
-    for (const part of [m.subject, m.text ?? '', m.html ?? '', ...textAttachments]) {
+    // scan the HTML as delivered: inline images become cid: attachments, every other data: URI stays in
+    for (const part of [m.subject, m.text ?? '', extractInlineImages(m.html ?? '', 'scan').html, ...textAttachments]) {
       const kind = findSecret(part);
       if (kind) {
         throw new GatewayError(

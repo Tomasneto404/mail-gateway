@@ -31,9 +31,12 @@ export function isPlainEmail(v: unknown): v is string {
 }
 
 const DOMAIN_RE = /^@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$/;
-/** Allowed-recipient entry: an exact address or `@domain`. */
+/** Allow-list entry that matches every recipient. */
+export const ANY_RECIPIENT = '*';
+
+/** Allowed-recipient entry: an exact address, `@domain`, or `*` (any recipient). */
 export function isRecipientRule(v: unknown): v is string {
-  return typeof v === 'string' && (isPlainEmail(v) || DOMAIN_RE.test(v));
+  return typeof v === 'string' && (v === ANY_RECIPIENT || isPlainEmail(v) || DOMAIN_RE.test(v));
 }
 
 export function IsPlainEmail(options?: ValidationOptions) {
@@ -84,7 +87,7 @@ export function IsRecipientRule(options?: ValidationOptions) {
       target: object.constructor,
       propertyName,
       options: {
-        message: `${propertyName} entries must be an exact address ("ops@example.com") or a domain ("@example.com")`,
+        message: `${propertyName} entries must be an exact address ("ops@example.com"), a domain ("@example.com") or "*" (any recipient)`,
         ...options,
       },
       validator: {

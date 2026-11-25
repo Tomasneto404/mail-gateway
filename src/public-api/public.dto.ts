@@ -52,7 +52,7 @@ export class MeResponseDto {
   @ApiProperty({ description: 'Fixed sender address used for every message.' }) fromAddress!: string;
   @ApiPropertyOptional({ type: String, nullable: true }) fromName!: string | null;
   @ApiProperty({ description: 'Whether replyTo may be set.' }) allowReplyTo!: boolean;
-  @ApiProperty({ type: [String], description: 'Allowed recipients: exact addresses and "@domain" entries. Every to/cc/bcc must match one.' }) allowedRecipients!: string[];
+  @ApiProperty({ type: [String], description: 'Allowed recipients: exact addresses, "@domain" entries, or "*" (any recipient). Every to/cc/bcc must match one.' }) allowedRecipients!: string[];
   @ApiProperty({ description: 'Max to+cc+bcc per message.' }) maxRecipientsPerMessage!: number;
   @ApiProperty({ description: 'Max subject+text+html+attachments bytes.' }) maxMessageBytes!: number;
   @ApiProperty() quotaPerHour!: number;
@@ -67,6 +67,7 @@ export class MeResponseDto {
   @ApiProperty({ description: 'Bodies with credentials, private keys, card or bank numbers are refused (CONTENT_BLOCKED).' }) blockSecrets!: boolean;
   @ApiProperty({ type: [String], description: 'Allowed attachment MIME types ("image/*" wildcards). Empty = any. Executables are always refused.' }) allowedAttachmentTypes!: string[];
   @ApiProperty({ description: 'Attachments are virus-scanned.' }) scanAttachments!: boolean;
+  @ApiProperty({ description: 'true = identical messages are accepted (no DUPLICATE_MESSAGE). false = an identical message (same recipients, subject and body) inside the dedup window is rejected.' }) allowDuplicates!: boolean;
   @ApiProperty({ description: 'Only server-side templates may be sent (see GET /v1/templates).' }) templatesOnly!: boolean;
   @ApiProperty({ type: [String], description: 'Templates the key may use. Empty = any.' }) allowedTemplates!: string[];
   @ApiPropertyOptional({

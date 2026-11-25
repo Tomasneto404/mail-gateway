@@ -49,7 +49,7 @@ export class PolicyFieldsDto {
   @ApiPropertyOptional() @IsOptional() @IsBoolean()
   allowReplyTo?: boolean;
 
-  @ApiPropertyOptional({ type: [String], description: 'Exact addresses ("ops@example.com") and/or domains ("@example.com"). Empty = reject everything.' })
+  @ApiPropertyOptional({ type: [String], description: 'Exact addresses ("ops@example.com"), domains ("@example.com") and/or "*" (any recipient). Empty = reject everything.' })
   @IsOptional() @Transform(lower) @IsArray() @ArrayMaxSize(500) @IsRecipientRule()
   allowedRecipients?: string[];
 
@@ -104,6 +104,10 @@ export class PolicyFieldsDto {
   @ApiPropertyOptional({ description: 'Virus-scan attachments with ClamAV (needs CLAMAV_HOST on the gateway).' })
   @IsOptional() @IsBoolean()
   scanAttachments?: boolean;
+
+  @ApiPropertyOptional({ description: 'Accept identical messages (same recipients, subject and body) inside DEDUP_WINDOW_SECONDS instead of rejecting them with DUPLICATE_MESSAGE (default false). Quotas still apply.' })
+  @IsOptional() @IsBoolean()
+  allowDuplicates?: boolean;
 
   // ---- templates
   @ApiPropertyOptional({ description: 'Only server-side templates may be sent; free-form subject/text/html are refused.' })

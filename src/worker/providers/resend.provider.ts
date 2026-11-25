@@ -1,6 +1,7 @@
 // Authored by Tomás Neto (TN 2026)
 import { Resend } from 'resend';
 import { DeliveryProvider, ErrorClassification, OutboundMessage, SendOutcome } from './provider';
+import { extractInlineImages } from '../../common/inline-images';
 
 export class ResendApiError extends Error {
   constructor(
@@ -44,6 +45,11 @@ export function sanitizeTag(v: string): string {
 }
 
 export function toResendPayload(m: OutboundMessage) {
+  const inline = m.html ? extractInlineImages(m.html, m.gatewayMessageId) : { html: m.html, images: [] };
+  const attachments = [
+    ...m.attachments.map((a) => ({ filename: a.filename, content: a.content.toString('base64'), contentType: a.contentType })),
+    ...inline.images.map((i) => ({ filename: i.filename, content: i.content.toString('base64'), contentType: i.contentType, contentId: i.cid })),
+  ];
   return {
     from: m.from.name ? `${m.from.name.replace(/["<>]/g, '')} <${m.from.address}>` : m.from.address,
     to: m.to,
@@ -52,15 +58,13 @@ export function toResendPayload(m: OutboundMessage) {
     ...(m.replyTo ? { replyTo: m.replyTo } : {}),
     subject: m.subject,
     ...(m.text ? { text: m.text } : {}),
-    ...(m.html ? { html: m.html } : {}),
+    ...(inline.html ? { html: inline.html } : {}),
     headers: { ...m.headers, 'Message-ID': m.headerMessageId },
     tags: [
       { name: 'gateway_key', value: sanitizeTag(m.keyName) },
       { name: 'gateway_message_id', value: sanitizeTag(m.gatewayMessageId) },
     ],
-    ...(m.attachments.length
-      ? { attachments: m.attachments.map((a) => ({ filename: a.filename, content: a.content.toString('base64'), contentType: a.contentType })) }
-      : {}),
+    ...(attachments.length ? { attachments } : {}),
   };
 }
 

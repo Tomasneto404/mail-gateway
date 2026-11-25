@@ -31,6 +31,7 @@ const policy: KeyPolicy = {
   blockSecrets: true,
   allowedAttachmentTypes: [],
   scanAttachments: false,
+  allowDuplicates: false,
   templatesOnly: false,
   allowedTemplates: [],
   warmup: true,
@@ -71,6 +72,13 @@ describe('PolicyEditor', () => {
 
     await user.click(screen.getByRole('button', { name: 'Remove @corp.test' }));
     expect(screen.getAllByTestId('recipient-chip')).toHaveLength(2);
+  });
+
+  it('accepts * (any recipient) and says so', async () => {
+    const { user } = setup();
+    await user.type(screen.getByLabelText('Add allowed recipient'), '*{Enter}');
+    expect(screen.getAllByTestId('recipient-chip').map((c) => c.textContent)).toEqual(['@corp.test', '*']);
+    expect(screen.getByText(/allows any recipient/)).toBeInTheDocument();
   });
 
   it('warns about an empty allow-list', async () => {
@@ -119,6 +127,13 @@ describe('PolicyEditor', () => {
     await user.click(screen.getByRole('switch', { name: 'Allow attachments' }));
     await user.click(screen.getByRole('button', { name: 'Save policy' }));
     await waitFor(() => expect(onSave).toHaveBeenCalledWith({ quotaPerHour: 20, attachmentsAllowed: true }));
+  });
+
+  it('allow repeated messages saves allowDuplicates', async () => {
+    const { user, onSave } = setup();
+    await user.click(screen.getByRole('switch', { name: 'Allow repeated messages' }));
+    await user.click(screen.getByRole('button', { name: 'Save policy' }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith({ allowDuplicates: true }));
   });
 
   it('is read-only for viewers', () => {

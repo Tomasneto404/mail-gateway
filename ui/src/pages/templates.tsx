@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { HtmlBodyField } from '@/components/templates/html-body-field';
 import { useMe } from '@/lib/auth';
 import { fmtShort } from '@/lib/format';
 import { keyNameSchema } from '@/lib/schemas';
@@ -88,12 +89,19 @@ function TemplateEditor({ template, open, onOpenChange, canManage }: { template:
             <TabsList>
               <TabsTrigger value="text">Text</TabsTrigger>
               <TabsTrigger value="html">HTML</TabsTrigger>
+              <TabsTrigger value="look" disabled={!d.html.trim()}>
+                Preview
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="text" className="pt-2">
               <Textarea aria-label="Text body" value={d.text} onChange={set('text')} rows={10} className="font-mono text-xs leading-5" />
             </TabsContent>
             <TabsContent value="html" className="pt-2">
-              <Textarea aria-label="HTML body" value={d.html} onChange={set('html')} rows={10} className="font-mono text-xs leading-5" />
+              <HtmlBodyField value={d.html} onChange={(html) => setD((x) => ({ ...x, html }))} disabled={!canManage} />
+            </TabsContent>
+            <TabsContent value="look" className="pt-2">
+              {/* the draft as it is, variables not filled in; scripts never run (sandbox) */}
+              <iframe title="HTML draft preview" sandbox="" srcDoc={d.html} className="h-96 w-full rounded-lg border bg-white" />
             </TabsContent>
           </Tabs>
           <div className="flex flex-wrap items-center gap-1.5 text-sm">
