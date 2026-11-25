@@ -65,7 +65,7 @@ docker compose up -d --wait
 docker compose logs admin             # sign-in email and the generated password
 ```
 
-Open <http://localhost:3000/ui>. Mailpit, the sandbox inbox, is at <http://localhost:8025>.
+Open <http://localhost:3000/ui>. Mailpit, the sandbox inbox, is at <http://localhost:8025>. To open it from the Messages page (**Sandbox Messages**), enter that address once under **Settings → Sandbox**.
 
 - **Settings:** everything lives in `.env` (see [`deploy/.env.example`](deploy/.env.example)). Its values fill the compose file and are passed to the gateway, so any setting from the main `.env.example` can be added without editing `compose.yaml`.
 - **Folders:**
@@ -105,7 +105,7 @@ Then open <http://127.0.0.1:3000/ui/> and sign in. Enabling two-factor authentic
 
 - API: <http://127.0.0.1:3000> (`API_BIND`/`API_PORT`). API reference (Scalar): <http://127.0.0.1:3000/docs>; Swagger UI: `/swagger`.
 - `./scripts/smoke.sh` runs an end-to-end check of the API through the CLI. It needs no UI login.
-- Mailpit UI (dev only, from `compose.override.yml`): <http://127.0.0.1:8025>.
+- Mailpit UI (dev only, from `compose.override.yml`): <http://127.0.0.1:8025>. Set it as the Mailpit URL under **Settings → Sandbox** to get the **Sandbox Messages** button on the Messages page.
 - Production: `docker compose -f docker-compose.yml up -d`. Add `-f compose.secrets.yml` to use Docker secrets (see [Secrets](#secrets)).
 
 > The stack's network uses `MAIL_GATEWAY_SUBNET` (default `10.213.7.0/24`). If it overlaps a route on the host
@@ -316,11 +316,19 @@ The gateway's state is always in view as a **signal light** at the top of the si
   </tr>
   <tr>
     <td><img src="docs/images/key-guardrails.png" alt="Key policy, lower half: warm-up switch, allowed link domains, max links per message, block secrets, templates-only switch and the allowed templates"></td>
-    <td><img src="docs/images/activity-verify.png" alt="Activity log after Verify integrity: chain intact, 26 rows verified, with the head hash, above the list of template, alert channel and key policy changes"></td>
+    <td><img src="docs/images/activity-verify.png" alt="Activity log after Verify integrity: chain intact, 27 rows verified, with the head hash, above the filters and the list of settings, template, alert channel and key policy changes"></td>
   </tr>
   <tr>
     <td><sub><b>Content guardrails</b>: link domains, secret blocking, templates-only keys and warm-up</sub></td>
     <td><sub><b>Activity log</b>: the hash chain checked from the UI</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/messages-dark.png" alt="Messages in dark theme: the key filter open over the list, with Sandbox Messages and Export CSV next to the title"></td>
+    <td><img src="docs/images/settings-sandbox.png" alt="Settings, Sandbox card: Mailpit SMTP, Mailpit answering with its message count, the Mailpit URL and the health check URL fields, and who changed them"></td>
+  </tr>
+  <tr>
+    <td><sub><b>Messages</b>: filters, <b>Sandbox Messages</b> (opens Mailpit) and CSV export</sub></td>
+    <td><sub><b>Settings → Sandbox</b>: the Mailpit link is set here, not in <code>.env</code></sub></td>
   </tr>
 </table>
 
@@ -440,6 +448,7 @@ Everything below can also be done from the admin UI. Admin API calls need a UI s
 | Rotate | `POST /admin/keys/:id/rotate` | `keys:rotate --name x` |
 | Approve / reject | `POST /admin/messages/:id/approve` · `/reject {"reason"}` · bulk `POST /admin/messages/approve {"ids":[...]}` | `messages:approve --id` |
 | Search audit log | `GET /admin/messages?status=rejected&keyId=&recipient=&subject=&from=&to=&page=&pageSize=&sort=&order=` | |
+| Mailpit link (Sandbox Messages) | `GET` / `PUT /admin/settings/sandbox {"uiUrl","apiUrl"}` (`settings:manage`) | |
 
 **Circuit breaker.** There is one breaker per live provider. It trips after `BREAKER_CONSECUTIVE_FAILURES` consecutive
 transport-level failures (connection errors, TLS/auth errors, 421), or when the failure rate in `BREAKER_WINDOW_SECONDS`
